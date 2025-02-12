@@ -45,11 +45,11 @@ tasks.withType<KotlinCompile> {
     )
 }
 
-val appName = "Wynntils Mod Installer"
+val appName = "MCC Mod Installer"
 
 compose.desktop {
     application {
-        mainClass = "com.wynntils.launchy.MainKt"
+        mainClass = "com.noxcrew.launchy.MainKt"
         nativeDistributions {
             when {
                 Os.isFamily(Os.FAMILY_MAC) -> targetFormats(TargetFormat.Dmg)
@@ -80,7 +80,7 @@ compose.desktop {
     }
 }
 
-val linuxAppDir = project.file("packaging/appimage/Wynntils.AppDir")
+val linuxAppDir = project.file("packaging/appimage/MccLaunchy.AppDir")
 val appImageTool = project.file("deps/appimagetool.AppImage")
 val composePackageDir = "$buildDir/compose/binaries/main/${
     when {
@@ -144,5 +144,5 @@ tasks {
 }
 
 tasks.jar {
-    manifest.attributes["Main-Class"] = "com.wynntils.launchy.MainKt"
+    manifest.attributes["Main-Class"] = "com.noxcrew.launchy.MainKt"
 }

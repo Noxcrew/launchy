@@ -1,13 +1,13 @@
 <div align="center">
 
-# Wynntils Mod Installer
+# MCC Mod Installer
 
-[![Release](https://img.shields.io/github/v/release/Wynntils/launchy?label=Download&style=for-the-badge)](https://github.com/Wynntils/launchy/releases/latest)
-[![Forked](https://img.shields.io/badge/Fork%20Of-MineInAbyss%2Flaunchy-green?style=for-the-badge&logo=github)](https://github.com/MineInAbyss/launchy)
+[![Release](https://img.shields.io/github/v/release/Aeltumn/launchy?label=Download&style=for-the-badge)](https://github.com/Aeltumn/launchy/releases/latest)
+[![Forked](https://img.shields.io/badge/Fork%20Of-Wyntills%2Flaunchy-green?style=for-the-badge&logo=github)](https://github.com/Wynntils/launchy)
 
 </div>
 
-Our custom installer which makes it easier to set up optional mods and in the future, resourcepack options, and more!
+A custom installer which makes it easy to set up the recommended mods for MC Championship. Based on the work of [Mine in Abyss](https://github.com/MineInAbyss/launchy) and [Wynntils](https://github.com/Wynntils/launchy).
 
 ## Screenshots
 <div align="center">
@@ -18,34 +18,15 @@ Our custom installer which makes it easier to set up optional mods and in the fu
 
 ## Instructions
 
-Install it from our [releases](https://github.com/Wynntils/launchy/releases/latest), set up your preferences then just launch through Minecraft (you will need to reopen the installer to download any mod updates we provide.)
+Install it from the [releases](https://github.com/Aeltumn/launchy/releases/latest), set up your preferences then launch the created profile in the regular Minecraft Launcher. You can re-run this installer to get mod updates!
 
 ## Features
-- Installs fabric into a 'Wynntils' profile
+- Installs fabric into a 'MC Championship' profile
 - Allows you to choose recommended mods by group or individually
 - Installs to the default mods folder and doesn't touch other present mods
-- Looks for updates in our mod recommendations on startup
+- Looks for updates for the mods on startup
 
 # FAQ
 
 ### My game uses my default mods folder
-- On Linux, Flatpak users should make sure the Minecraft launcher has access to `~/.wynntils` (you may need to allow access to the entire home directory.)
-
-### [MacOS] "Wynntils Mod Installer" is damaged and can't be opened
-![img.png](docs/img.png)
-
-On MacOS, you will see this error message due to our file not being signed by an apple developer key, which is $80/year. Fixing this is simple, please follow the guide below.
-
-Install the app as you would any other app.
-After installation, you have to open the app in a specific way to force MacOS's Gatekeeper.
-Firstly, run this code in your Terminal app:
-```
-cd /Applications
-xattr -d com.apple.quarantine Wynntils\ Mod\ Installer.app
-```
-
-After doing so, open the app. You should see the open to "Open" the application. Click it, and after that, the app should work normally.
-
-<img width="259" alt="image" src="https://github.com/Wynntils/launchy/assets/49001742/ab5f91c1-def9-4557-9a95-2c92275eabb1">
-
-If you have issues with installing, reach out on our [Discord](https://discord.gg/wynntils).
+- On Linux, Flatpak users should make sure the Minecraft Launcher has access to `~/.mcclaunchy` (you may need to allow access to the entire home directory)
