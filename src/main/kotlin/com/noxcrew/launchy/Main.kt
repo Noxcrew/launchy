@@ -34,7 +34,7 @@ import kotlin.io.path.inputStream
 private val LaunchyStateProvider = compositionLocalOf<LaunchyState> { error("No local versions provided") }
 
 // set to true to enable dev mode
-const val DEV_MODE = false
+const val DEV_MODE = true
 val LocalLaunchyState: LaunchyState
     @Composable
     get() = LaunchyStateProvider.current
@@ -63,7 +63,7 @@ fun main() {
         ) {
             val topBarState = remember { TopBarState(onClose, windowState, this) }
             val ready = launchyState != null
-            val scheme = rememberMIAColorScheme(0.25f)
+            val scheme = rememberMIAColorScheme()
             MaterialTheme(colorScheme = scheme) {
                 CompositionLocalProvider(TopBarProvider provides topBarState) {
                     Scaffold {

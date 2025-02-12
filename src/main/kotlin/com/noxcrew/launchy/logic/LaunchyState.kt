@@ -110,7 +110,7 @@ class LaunchyState(
         installedMinecraftVersion == versions.minecraftVersion &&
         installedFabricVersion == versions.fabricVersion && FabricInstaller.isProfileInstalled(
             Dirs.minecraft,
-            "Wynncraft"
+            "MC Championship"
         )
     }
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
