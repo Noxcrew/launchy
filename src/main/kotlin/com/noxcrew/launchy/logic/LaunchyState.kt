@@ -14,37 +14,40 @@ import kotlin.io.path.exists
 class LaunchyState(
     // Config should never be mutated unless it also updates UI state
     private val config: Config,
-    // Versions are immutable, we don't care for reading
-    val versions: Versions,
-//    val scaffoldState: ScaffoldState
+    initialProfile: Versions,
 ) {
+    var profile by mutableStateOf(initialProfile)
+    var profileUrl by mutableStateOf(config.profileUrl)
+
     val enabledMods = mutableStateSetOf<Mod>().apply {
         addAll(config.toggledMods.mapNotNull { it.toMod() })
-        val defaultEnabled = versions.groups
+        val defaultEnabled = profile.groups
             .filter { it.enabledByDefault }
             .map { it.name } - config.seenGroups
         val fullEnabled = config.fullEnabledGroups
-        val forceEnabled = versions.groups.filter { it.forceEnabled }.map { it.name }
-        val forceDisabled = versions.groups.filter { it.forceDisabled }
+        val forceEnabled = profile.groups.filter { it.forceEnabled }.map { it.name }
+        val forceDisabled = profile.groups.filter { it.forceDisabled }
         val fullDisabled = config.fullDisabledGroups
-        addAll(((fullEnabled + defaultEnabled + forceEnabled).toSet())
-            .mapNotNull { it.toGroup() }
-            .mapNotNull { versions.modGroups[it] }.flatten()
+        addAll(
+            ((fullEnabled + defaultEnabled + forceEnabled).toSet())
+                .mapNotNull { it.toGroup() }
+                .mapNotNull { profile.modGroups[it] }.flatten()
         )
-        removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { versions.modGroups[it] }.flatten().toSet())
+        removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
     }
-
-    val disabledMods: Set<Mod> by derivedStateOf { versions.nameToMod.values.toSet() - enabledMods }
+    val disabledMods: Set<Mod> by derivedStateOf { profile.nameToMod.values.toSet() - enabledMods }
 
     val downloadURLs = mutableStateMapOf<Mod, DownloadURL>().apply {
-        putAll(config.downloads
+        putAll(
+            config.downloads
             .mapNotNull { it.key.toMod()?.to(it.value) }
             .toMap()
         )
     }
 
     val downloadConfigURLs = mutableStateMapOf<Mod, ConfigURL>().apply {
-        putAll(config.configs
+        putAll(
+            config.configs
             .mapNotNull { it.key.toMod()?.to(it.value) }
             .toMap()
         )
@@ -55,6 +58,7 @@ class LaunchyState(
 
     var notPresentDownloads by mutableStateOf(setOf<Mod>())
         private set
+
     init {
         updateNotPresent()
     }
@@ -81,7 +85,6 @@ class LaunchyState(
     }
 
 
-
     val enabledConfigs: MutableSet<Mod> = mutableStateSetOf<Mod>().apply {
         addAll(config.toggledConfigs.mapNotNull { it.toMod() })
     }
@@ -106,18 +109,25 @@ class LaunchyState(
     fun isDownloading(mod: Mod) = downloading[mod] != null || downloadingConfigs[mod] != null
 
     var installingProfile by mutableStateOf(false)
-    val fabricUpToDate by derivedStateOf {
-        installedMinecraftVersion == versions.minecraftVersion &&
-        installedFabricVersion == versions.fabricVersion && FabricInstaller.isProfileInstalled(
+    val profileCreated by derivedStateOf {
+        FabricInstaller.isProfileInstalled(
             Dirs.minecraft,
             "MC Championship"
         )
+    }
+    val fabricUpToDate by derivedStateOf {
+        profileCreated &&
+                installedMinecraftVersion == profile.minecraftVersion &&
+                installedFabricVersion == profile.fabricVersion
     }
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
     val installsQueued by derivedStateOf { queuedInstalls.isNotEmpty() }
     val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
     val minecraftValid = Dirs.minecraft.exists()
     val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate }
+
+    var errorMessage by mutableStateOf("")
+    var importingProfile by mutableStateOf(false)
 
     // If any state is true, we consider import handled and move on
     var handledImportOptions by mutableStateOf(
@@ -131,7 +141,8 @@ class LaunchyState(
     fun setModEnabled(mod: Mod, enabled: Boolean) {
         if (enabled) {
             enabledMods += mod
-            enabledMods.filter { it.name in mod.incompatibleWith || it.incompatibleWith.contains(mod.name) }.forEach { setModEnabled(it, false) }
+            enabledMods.filter { it.name in mod.incompatibleWith || it.incompatibleWith.contains(mod.name) }
+                .forEach { setModEnabled(it, false) }
             disabledMods.filter { it.name in mod.requires }.forEach { setModEnabled(it, true) }
         } else {
             enabledMods -= mod
@@ -153,7 +164,7 @@ class LaunchyState(
         else enabledConfigs.remove(mod)
     }
 
-    suspend fun install() = coroutineScope {
+    suspend fun update() = coroutineScope {
         updateNotPresent()
         if (!fabricUpToDate)
             installFabric()
@@ -181,15 +192,15 @@ class LaunchyState(
             Dirs.minecraft,
             Dirs.mcclaunchy,
             "MC Championship",
-            versions.minecraftVersion,
+            profile.minecraftVersion,
             "fabric-loader",
-            versions.fabricVersion,
+            profile.fabricVersion,
         )
         installingProfile = false
         installedFabricVersion = "Installing..."
-        installedFabricVersion = versions.fabricVersion
+        installedFabricVersion = profile.fabricVersion
         installedMinecraftVersion = "Installing..."
-        installedMinecraftVersion = versions.minecraftVersion
+        installedMinecraftVersion = profile.minecraftVersion
     }
 
     suspend fun download(mod: Mod) {
@@ -254,34 +265,52 @@ class LaunchyState(
 
     fun save() {
         config.copy(
-            fullEnabledGroups = versions.modGroups
+            fullEnabledGroups = profile.modGroups
                 .filter { enabledMods.containsAll(it.value) }.keys
                 .map { it.name }.toSet(),
             toggledMods = enabledMods.mapTo(mutableSetOf()) { it.name },
-            toggledConfigs = enabledConfigs.mapTo(mutableSetOf()) { it.name } + enabledMods.filter { it.forceConfigDownload }.mapTo(mutableSetOf()) { it.name },
+            toggledConfigs = enabledConfigs.mapTo(mutableSetOf()) { it.name } + enabledMods.filter { it.forceConfigDownload }
+                .mapTo(mutableSetOf()) { it.name },
             downloads = downloadURLs.mapKeys { it.key.name },
             configs = downloadConfigURLs.mapKeys { it.key.name },
-            seenGroups = versions.groups.map { it.name }.toSet(),
+            seenGroups = profile.groups.map { it.name }.toSet(),
             installedFabricVersion = installedFabricVersion,
             installedMinecraftVersion = installedMinecraftVersion,
             handledImportOptions = handledImportOptions,
             handledFirstLaunch = handledFirstLaunch,
+            profileUrl = profileUrl,
         ).save()
     }
 
-    fun ModName.toMod(): Mod? = versions.nameToMod[this]
-    fun GroupName.toGroup(): Group? = versions.nameToGroup[this]
+    fun ModName.toMod(): Mod? = profile.nameToMod[this]
+    fun GroupName.toGroup(): Group? = profile.nameToGroup[this]
 
     val Mod.file get() = Dirs.mods / "${name}.jar"
     val Mod.config get() = Dirs.tmp / "${name}-config.zip"
     val Mod.isDownloaded get() = file.exists()
 
-    private fun updateNotPresent(): Set<Mod> {
-        return downloadURLs.filter { !it.key.isDownloaded }.keys.also { notPresentDownloads = it }
+    fun changeProfile(url: String, versions: Versions) {
+        profileUrl = url
+        profile = versions
+
+        enabledMods.clear()
+        enabledMods.apply {
+            val defaultEnabled = profile.groups
+                .filter { it.enabledByDefault }
+                .map { it.name }
+            val forceEnabled = profile.groups.filter { it.forceEnabled }.map { it.name }
+            val forceDisabled = profile.groups.filter { it.forceDisabled }
+            addAll(
+                ((defaultEnabled + forceEnabled).toSet())
+                    .mapNotNull { it.toGroup() }
+                    .mapNotNull { profile.modGroups[it] }.flatten()
+            )
+            removeAll((forceDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
+        }
     }
 
-    fun launch() {
-        TODO()
+    private fun updateNotPresent(): Set<Mod> {
+        return downloadURLs.filter { !it.key.isDownloaded }.keys.also { notPresentDownloads = it }
     }
 }
 

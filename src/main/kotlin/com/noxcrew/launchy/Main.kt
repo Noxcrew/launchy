@@ -33,8 +33,6 @@ import kotlin.io.path.inputStream
 
 private val LaunchyStateProvider = compositionLocalOf<LaunchyState> { error("No local versions provided") }
 
-// set to true to enable dev mode
-const val DEV_MODE = true
 val LocalLaunchyState: LaunchyState
     @Composable
     get() = LaunchyStateProvider.current
@@ -47,7 +45,7 @@ fun main() {
         val windowState = rememberWindowState(placement = WindowPlacement.Floating)
         val launchyState by produceState<LaunchyState?>(null) {
             val config = Config.read()
-            val versions = Versions.readLatest(config.downloadUpdates)
+            val versions = Versions.readLatest(config.profileUrl, Dirs.versionsFile)
             value = LaunchyState(config, versions)
         }
         val onClose: () -> Unit = {
@@ -56,7 +54,7 @@ fun main() {
         }
         Window(
             state = windowState,
-            title = "MCC - Mod Installer",
+            title = "MCC Launcher",
             icon = appIcon,
             onCloseRequest = onClose,
             undecorated = true,
@@ -69,7 +67,7 @@ fun main() {
                     Scaffold {
                         AnimatedVisibility(!ready, exit = fadeOut()) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Getting latest mod versions...")
+                                Text("Fetching latest mod information...")
                             }
                         }
                         AnimatedVisibility(ready, enter = fadeIn()) {

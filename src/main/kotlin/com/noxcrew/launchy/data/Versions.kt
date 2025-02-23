@@ -1,13 +1,14 @@
 package com.noxcrew.launchy.data
 
-import com.noxcrew.launchy.DEV_MODE
 import com.noxcrew.launchy.logic.Downloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import java.nio.file.Path
 import kotlin.io.path.Path
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.inputStream
 
 @Serializable
@@ -27,16 +28,16 @@ data class Versions(
         .associateBy { it.name }
 
     companion object {
-        const val VERSIONS_URL = "https://raw.githubusercontent.com/Aeltumn/launchy/main/versions.yml"
-
-        suspend fun readLatest(download: Boolean): Versions = withContext(Dispatchers.IO) {
-            // check if in development mode
-            if (DEV_MODE) {
+        suspend fun readLatest(url: String, target: Path, ignoreLocal: Boolean = false): Versions = withContext(Dispatchers.IO) {
+            // Check against an environment variable that no user should ever have
+            if (!ignoreLocal && System.getenv()["MCC_LAUNCHY_DEV"] == "13518961351") {
+                println("Reading from local versions")
                 val file = Path("versions.yml")
                 Formats.yaml.decodeFromStream(serializer(), file.inputStream())
             } else {
-                if (download) Downloader.download(VERSIONS_URL, Dirs.versionsFile)
-                Formats.yaml.decodeFromStream(serializer(), Dirs.versionsFile.inputStream())
+                println("Fetching latest versions from $url to ${target.absolutePathString()}")
+                Downloader.download(url, target)
+                Formats.yaml.decodeFromStream(serializer(), target.inputStream())
             }
         }
     }

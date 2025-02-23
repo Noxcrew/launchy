@@ -13,7 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
-import com.noxcrew.launchy.ui.screens.main.buttons.InstallButton
+import com.noxcrew.launchy.ui.screens.main.buttons.PlayButton
+import com.noxcrew.launchy.ui.screens.main.buttons.ProfileButton
 
 @Composable
 fun InfoBar(modifier: Modifier = Modifier) {
@@ -38,7 +39,9 @@ fun InfoBar(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(6.dp)
         ) {
-            InstallButton(!state.isDownloading && state.operationsQueued && state.minecraftValid)
+            PlayButton()
+            Spacer(Modifier.width(10.dp))
+            ProfileButton()
             Spacer(Modifier.width(10.dp))
 
             ActionButton(

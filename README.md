@@ -1,6 +1,6 @@
 <div align="center">
 
-# MCC Mod Installer
+# MCC Launcher
 
 [![Release](https://img.shields.io/github/v/release/Aeltumn/launchy?label=Download&style=for-the-badge)](https://github.com/Aeltumn/launchy/releases/latest)
 [![Forked](https://img.shields.io/badge/Fork%20Of-Wyntills%2Flaunchy-green?style=for-the-badge&logo=github)](https://github.com/Wynntils/launchy)

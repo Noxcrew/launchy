@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
+import com.noxcrew.launchy.ui.screens.main.ErrorPopup
+import com.noxcrew.launchy.ui.screens.main.ImportProfileDialog
 
 @Composable
 @Preview
@@ -34,7 +36,7 @@ fun SettingsScreen() {
                 ) {
                     val lazyListState = rememberLazyListState()
                     LazyColumn(Modifier.fillMaxSize().padding(end = 12.dp), lazyListState) {
-                        items(state.versions.modGroups.toList()) { (group, mods) ->
+                        items(state.profile.modGroups.toList()) { (group, mods) ->
                             ModGroup(group, mods)
                         }
                     }
@@ -46,4 +48,7 @@ fun SettingsScreen() {
             }
         }
     }
+
+    if (state.importingProfile) ImportProfileDialog()
+    if (state.errorMessage.isNotBlank()) ErrorPopup()
 }

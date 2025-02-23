@@ -23,22 +23,17 @@ object Dirs {
         OS.WINDOWS -> Path(System.getenv("APPDATA"))
         OS.MAC -> Path(System.getProperty("user.home")) / "Library/Application Support"
         OS.LINUX -> home / ".config"
-    } / "mcclaunchy"
+    } / ".mcclaunchy"
 
     val configFile = config / "mcclaunchy-launcher.yml"
     val versionsFile = config / "mcclaunchy-versions.yml"
 
+    @OptIn(ExperimentalPathApi::class)
     fun createDirs() {
         config.createDirectories()
         mcclaunchy.createDirectories()
         mods.createDirectories()
+        tmp.deleteRecursively()
         tmp.createDirectories()
-    }
-
-    fun createConfigFiles() {
-        if (configFile.notExists())
-            configFile.createFile().writeText("{}")
-        if (versionsFile.notExists())
-            versionsFile.createFile().writeText("{}")
     }
 }

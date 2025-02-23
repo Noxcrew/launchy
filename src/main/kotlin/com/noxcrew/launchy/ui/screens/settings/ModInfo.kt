@@ -72,7 +72,7 @@ fun ModInfo(group: Group, mod: Mod) {
                     val displayedName = if (mod.displayName.isEmpty()) mod.name else mod.displayName
                     Text(displayedName, style = MaterialTheme.typography.bodyLarge)
                     // build list of mods that are incompatible with this mod
-                    val incompatibleMods = state.versions.modGroups.flatMap { it.value }
+                    val incompatibleMods = state.profile.modGroups.flatMap { it.value }
                         .filter { it.incompatibleWith.contains(mod.name) || mod.incompatibleWith.contains(it.name) }
                         .map { it.name }
                     if (mod.requires.isNotEmpty() || incompatibleMods.isNotEmpty()) {

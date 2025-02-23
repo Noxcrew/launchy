@@ -67,7 +67,7 @@ fun AppTopBar(
                 }
                 AnimatedVisibility(!transparent) {
                     Text(
-                        "MCC Mod Launcher",
+                        "MCC Launcher",
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
                     )

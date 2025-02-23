@@ -1,5 +1,6 @@
 import de.undercouch.gradle.tasks.download.Download
 import org.apache.tools.ant.taskdefs.condition.Os
+import org.gradle.internal.deployment.RunApplication
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -45,7 +46,7 @@ tasks.withType<KotlinCompile> {
     )
 }
 
-val appName = "MCC Mod Installer"
+val appName = "MCC Launcher"
 
 compose.desktop {
     application {
@@ -143,6 +144,12 @@ tasks {
     }
 }
 
+// Set the main class for the jar task
 tasks.jar {
     manifest.attributes["Main-Class"] = "com.noxcrew.launchy.MainKt"
+}
+
+// This makes the local run version use the local versions.yml instead of downloading it
+tasks.withType<RunApplication> {
+    arguments = arguments + "-DMCC_LAUNCHY_DEV=true"
 }

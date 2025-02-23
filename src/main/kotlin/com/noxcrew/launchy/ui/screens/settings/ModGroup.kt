@@ -45,10 +45,10 @@ fun ModGroup(group: Group, mods: Collection<Mod>) {
                 ToggleButtons(
                     onSwitch = { option ->
                         if (option == Option.ENABLED)
-                            state.versions.modGroups[group]
+                            state.profile.modGroups[group]
                                 ?.forEach { state.setModEnabled(it, true) }
                         else if (option == Option.DISABLED)
-                            state.versions.modGroups[group]
+                            state.profile.modGroups[group]
                                 ?.forEach { state.setModEnabled(it, false) }
                     },
                     group = group,
