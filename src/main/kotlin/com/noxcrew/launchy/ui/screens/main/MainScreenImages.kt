@@ -23,17 +23,7 @@ import java.net.URL
 fun BoxScope.BackgroundImage(windowScope: WindowScope) {
     windowScope.WindowDraggableArea {
         Image(
-            painter = painterResource(
-                resourcePath = "https://cdn.wynntils.com/default-wallpaper.png",
-                loader = object : ResourceLoader {
-                    override fun load(resourcePath: String): InputStream {
-                        val url = URL(resourcePath)
-                        val connection = url.openConnection() as HttpURLConnection
-                        connection.doInput = true
-                        connection.connect()
-                        return connection.getInputStream()
-                    }
-                }),
+            painter = painterResource("background.png"),
             contentDescription = "Main render",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -64,7 +54,7 @@ fun LogoLarge(modifier: Modifier) {
     Image(
         painter = painterResource("logo.png"),
         contentDescription = "Logo",
-        modifier = Modifier.widthIn(0.dp, 250.dp).then(modifier),
+        modifier = Modifier.widthIn(0.dp, 400.dp).then(modifier),
         contentScale = ContentScale.FillWidth
     )
 }

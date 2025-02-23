@@ -148,8 +148,3 @@ tasks {
 tasks.jar {
     manifest.attributes["Main-Class"] = "com.noxcrew.launchy.MainKt"
 }
-
-// This makes the local run version use the local versions.yml instead of downloading it
-tasks.withType<RunApplication> {
-    arguments = arguments + "-DMCC_LAUNCHY_DEV=true"
-}

@@ -6,6 +6,9 @@ groups:
   - name: Recommended Mods
   - name: Optional Mods
     enabledByDefault: false
+servers:
+  - name: MCC Island
+    ip: play.mccisland.net
 modGroups:
   Core Mods:
     - name: Noxesium
