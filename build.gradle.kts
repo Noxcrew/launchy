@@ -36,6 +36,7 @@ dependencies {
     implementation("org.json:json:20210307")
     implementation("net.fabricmc:fabric-installer:1.0.1")
     implementation("edu.stanford.ejalbert:BrowserLauncher2:1.3")
+    implementation("net.kyori:adventure-nbt:4.18.0")
 }
 
 tasks.withType<KotlinCompile> {

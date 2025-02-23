@@ -1,11 +1,29 @@
 package com.noxcrew.launchy.logic
 
-import androidx.compose.runtime.*
-import com.noxcrew.launchy.data.*
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.noxcrew.launchy.data.Config
+import com.noxcrew.launchy.data.ConfigURL
+import com.noxcrew.launchy.data.Dirs
+import com.noxcrew.launchy.data.DownloadURL
+import com.noxcrew.launchy.data.Group
+import com.noxcrew.launchy.data.GroupName
+import com.noxcrew.launchy.data.Mod
+import com.noxcrew.launchy.data.ModName
+import com.noxcrew.launchy.data.Versions
+import com.noxcrew.launchy.data.unzip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import java.util.*
+import net.kyori.adventure.nbt.BinaryTagIO
+import net.kyori.adventure.nbt.ByteBinaryTag
+import net.kyori.adventure.nbt.CompoundBinaryTag
+import net.kyori.adventure.nbt.ListBinaryTag
+import net.kyori.adventure.nbt.StringBinaryTag
+import java.util.Collections
 import java.util.concurrent.CancellationException
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.div
@@ -40,16 +58,16 @@ class LaunchyState(
     val downloadURLs = mutableStateMapOf<Mod, DownloadURL>().apply {
         putAll(
             config.downloads
-            .mapNotNull { it.key.toMod()?.to(it.value) }
-            .toMap()
+                .mapNotNull { it.key.toMod()?.to(it.value) }
+                .toMap()
         )
     }
 
     val downloadConfigURLs = mutableStateMapOf<Mod, ConfigURL>().apply {
         putAll(
             config.configs
-            .mapNotNull { it.key.toMod()?.to(it.value) }
-            .toMap()
+                .mapNotNull { it.key.toMod()?.to(it.value) }
+                .toMap()
         )
     }
 
@@ -184,6 +202,56 @@ class LaunchyState(
                 }
             }
         }
+        updateServers()
+    }
+
+    fun updateServers() {
+        val serverFile = Dirs.mcclaunchy / "servers.dat"
+        val file = if (serverFile.exists()) {
+            BinaryTagIO.unlimitedReader().read(serverFile, BinaryTagIO.Compression.GZIP)
+        } else {
+            CompoundBinaryTag.empty()
+        }
+        val servers = file.getList("servers", ListBinaryTag.empty())
+
+        // Determine what servers to add
+        val intended = profile.servers
+
+        // Check if all intended servers are present
+        val existing = intended.associateWith { server ->
+            servers.firstOrNull { (it as? CompoundBinaryTag)?.getString("ip") == server.ip }
+        }
+        if (existing.values.none { it == null }) return
+
+        // Put all of our servers at the top whenever we make edits
+        val newServers = ListBinaryTag.empty()
+        for ((server, current) in existing) {
+            if (current == null) {
+                newServers.add(
+                    CompoundBinaryTag.from(
+                        mapOf(
+                            "acceptTextures" to ByteBinaryTag.ONE,
+                            "hidden" to ByteBinaryTag.ZERO,
+                            "name" to StringBinaryTag.stringBinaryTag(server.name),
+                            "ip" to StringBinaryTag.stringBinaryTag(server.ip)
+                        )
+                    )
+                )
+            } else {
+                newServers.add(current)
+            }
+        }
+
+        // Add back the original server list at the bottom
+        val serverIps = intended.map { it.ip }
+        for (oldServer in servers) {
+            if ((oldServer as? CompoundBinaryTag)?.getString("ip") !in serverIps) {
+                newServers.add(oldServer)
+            }
+        }
+
+        // Update the file
+        BinaryTagIO.writer().write(file.put("servers", newServers), serverFile, BinaryTagIO.Compression.GZIP)
     }
 
     fun installFabric() {

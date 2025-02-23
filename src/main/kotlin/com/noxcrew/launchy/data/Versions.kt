@@ -16,6 +16,7 @@ data class Versions(
     val groups: Set<Group>,
     @SerialName("modGroups")
     private val _modGroups: Map<GroupName, Set<Mod>>,
+    val servers: Set<Server> = emptySet(),
     val fabricVersion: String,
     val minecraftVersion: String
 ) {
