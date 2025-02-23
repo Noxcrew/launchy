@@ -21,10 +21,12 @@ import java.util.Base64
 import java.util.Date
 import java.util.stream.Collectors
 import javax.swing.JOptionPane
+import kotlin.io.path.exists
 
 object FabricInstaller {
     fun isProfileInstalled(mcDir: Path, name: String): Boolean {
         val launcherProfiles: Path = mcDir.resolve("launcher_profiles.json")
+        if (!launcherProfiles.exists()) return false
         val jsonObject = JSONObject(Utils.readString(launcherProfiles))
         val profiles: JSONObject = jsonObject.getJSONObject("profiles")
         return profiles.has(name)

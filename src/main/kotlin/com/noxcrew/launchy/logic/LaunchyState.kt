@@ -127,8 +127,9 @@ class LaunchyState(
 
     fun isDownloading(mod: Mod) = downloading[mod] != null || downloadingConfigs[mod] != null
 
+    val minecraftValid = (Dirs.minecraft / "launcher_profiles.json").exists()
     var profileCreated by mutableStateOf(
-        FabricInstaller.isProfileInstalled(
+        minecraftValid && FabricInstaller.isProfileInstalled(
             Dirs.minecraft,
             "MC Championship"
         )
@@ -142,7 +143,6 @@ class LaunchyState(
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
     val installsQueued by derivedStateOf { queuedInstalls.isNotEmpty() }
     val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
-    val minecraftValid = (Dirs.minecraft / "launcher_profiles.json").exists()
     val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate }
 
     var errorMessage by mutableStateOf("")
