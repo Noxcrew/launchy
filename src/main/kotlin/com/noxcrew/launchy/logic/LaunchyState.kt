@@ -112,6 +112,7 @@ class LaunchyState(
         enabledMods.forEach { setModEnabled(it, true) }
     }
 
+    var updating by mutableStateOf(false)
     val downloading = mutableStateMapOf<Mod, Progress>()
     val downloadingConfigs = mutableStateMapOf<Mod, Progress>()
     val isDownloading by derivedStateOf { downloading.isNotEmpty() || downloadingConfigs.isNotEmpty() }
@@ -126,7 +127,6 @@ class LaunchyState(
 
     fun isDownloading(mod: Mod) = downloading[mod] != null || downloadingConfigs[mod] != null
 
-    var installingProfile by mutableStateOf(false)
     val profileCreated by derivedStateOf {
         FabricInstaller.isProfileInstalled(
             Dirs.minecraft,
@@ -257,7 +257,6 @@ class LaunchyState(
     }
 
     fun installFabric() {
-        installingProfile = true
         FabricInstaller.installToLauncher(
             Dirs.minecraft,
             Dirs.mcclaunchy,
@@ -266,7 +265,7 @@ class LaunchyState(
             "fabric-loader",
             profile.fabricVersion,
         )
-        installingProfile = false
+        println("Finished installing profile")
         installedFabricVersion = "Installing..."
         installedFabricVersion = profile.fabricVersion
         installedMinecraftVersion = "Installing..."

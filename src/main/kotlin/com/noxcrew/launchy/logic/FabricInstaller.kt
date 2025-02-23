@@ -139,12 +139,13 @@ object FabricInstaller {
         jsonObject.put("lastUsed", Utils.ISO_8601.format(Date()))
         jsonObject.put("lastVersionId", versionId)
         jsonObject.put("icon", getProfileIcon())
+        jsonObject.put("javaArgs", "-Xmx4G -XX:+UseZGC -XX:+ZGenerational")
         return jsonObject
     }
 
     private fun getProfileIcon(): String {
         return try {
-            val input: InputStream = Utils::class.java.classLoader.getResourceAsStream("icon.png")!!
+            val input: InputStream = Utils::class.java.classLoader.getResourceAsStream("launcher_icon.png")!!
             val var4: String
             try {
                 var ret = ByteArray(4096)

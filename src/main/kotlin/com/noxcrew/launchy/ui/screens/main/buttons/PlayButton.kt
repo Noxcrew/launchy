@@ -37,13 +37,15 @@ fun PlayButton(
     val state = LocalLaunchyState
     val coroutineScope = rememberCoroutineScope()
     Button(
-        enabled = !state.startingLauncher && state.minecraftValid && !state.isDownloading,
+        enabled = !state.startingLauncher && state.minecraftValid && !state.updating,
         onClick = {
-            if (!state.startingLauncher && state.minecraftValid && !state.isDownloading) {
+            if (!state.startingLauncher && state.minecraftValid && !state.updating) {
                 if (state.operationsQueued) {
                     coroutineScope.launch {
                         try {
+                            state.updating = true
                             state.update()
+                            state.updating = false
                         } catch (x: Throwable) {
                             x.printStackTrace()
                             state.errorMessage = """
@@ -130,7 +132,7 @@ fun PlayButton(
             button("Invalid Minecraft", Icons.Rounded.Close, "Invalid")
         }
         AnimatedVisibility(state.minecraftValid) {
-            AnimatedVisibility(state.isDownloading) {
+            AnimatedVisibility(state.updating) {
                 AnimatedVisibility(!state.profileCreated) {
                     button("Installing...", Icons.Rounded.Update, "Update")
                 }
@@ -138,7 +140,7 @@ fun PlayButton(
                     button("Updating...", Icons.Rounded.Update, "Update")
                 }
             }
-            AnimatedVisibility(!state.isDownloading) {
+            AnimatedVisibility(!state.updating) {
                 AnimatedVisibility(!state.profileCreated && state.operationsQueued) {
                     button("Install", Icons.Rounded.Download, "Download")
                 }

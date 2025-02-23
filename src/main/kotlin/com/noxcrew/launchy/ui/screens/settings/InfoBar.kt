@@ -18,7 +18,7 @@ import com.noxcrew.launchy.ui.screens.main.buttons.ProfileButton
 import com.noxcrew.launchy.ui.state.TopBar
 
 @Composable
-fun InfoBar(modifier: Modifier = Modifier) {
+fun InfoBar(barOnly: Boolean = false, modifier: Modifier = Modifier) {
     val state = LocalLaunchyState
     Surface(
         tonalElevation = 2.dp,
@@ -40,41 +40,43 @@ fun InfoBar(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(6.dp)
         ) {
-            PlayButton(TopBar)
-            Spacer(Modifier.width(10.dp))
-            ProfileButton()
-            Spacer(Modifier.width(10.dp))
+            if (!barOnly) {
+                PlayButton(TopBar)
+                Spacer(Modifier.width(10.dp))
+                ProfileButton()
+                Spacer(Modifier.width(10.dp))
 
-            ActionButton(
-                shown = !state.minecraftValid,
-                icon = Icons.Rounded.Error,
-                desc = "No minecraft installation found",
-            )
+                ActionButton(
+                    shown = !state.minecraftValid,
+                    icon = Icons.Rounded.Error,
+                    desc = "No minecraft installation found",
+                )
 
-            ActionButton(
-                shown = !state.fabricUpToDate,
-                icon = Icons.Rounded.HistoryEdu,
-                desc = "Will install fabric",
-            )
-            ActionButton(
-                shown = state.updatesQueued,
-                icon = Icons.Rounded.Update,
-                desc = "Will update",
-                extra = state.queuedUpdates.size.toString()
-            )
-            ActionButton(
-                shown = state.installsQueued,
-                icon = Icons.Rounded.Download,
-                desc = "Will download",
-                extra = state.queuedInstalls.size.toString()
-            )
-            ActionButton(
-                shown = state.deletionsQueued,
-                icon = Icons.Rounded.Delete,
-                desc = "Will remove",
-                extra = state.queuedDeletions.size.toString()
-            )
-            Spacer(Modifier.width(10.dp).weight(1f))
+                ActionButton(
+                    shown = !state.fabricUpToDate,
+                    icon = Icons.Rounded.HistoryEdu,
+                    desc = "Will install fabric",
+                )
+                ActionButton(
+                    shown = state.updatesQueued,
+                    icon = Icons.Rounded.Update,
+                    desc = "Will update",
+                    extra = state.queuedUpdates.size.toString()
+                )
+                ActionButton(
+                    shown = state.installsQueued,
+                    icon = Icons.Rounded.Download,
+                    desc = "Will download",
+                    extra = state.queuedInstalls.size.toString()
+                )
+                ActionButton(
+                    shown = state.deletionsQueued,
+                    icon = Icons.Rounded.Delete,
+                    desc = "Will remove",
+                    extra = state.queuedDeletions.size.toString()
+                )
+                Spacer(Modifier.width(10.dp).weight(1f))
+            }
 
             if (state.isDownloading) {
                 // Show download progress
