@@ -43,9 +43,11 @@ fun PlayButton(
                 if (state.operationsQueued) {
                     coroutineScope.launch {
                         try {
+                            println("Starting update")
                             state.updating = true
                             state.update()
                             state.updating = false
+                            println("Finished update")
                         } catch (x: Throwable) {
                             x.printStackTrace()
                             state.errorMessage = """

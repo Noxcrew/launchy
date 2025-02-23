@@ -127,12 +127,12 @@ class LaunchyState(
 
     fun isDownloading(mod: Mod) = downloading[mod] != null || downloadingConfigs[mod] != null
 
-    val profileCreated by derivedStateOf {
+    var profileCreated by mutableStateOf(
         FabricInstaller.isProfileInstalled(
             Dirs.minecraft,
             "MC Championship"
         )
-    }
+    )
     val fabricUpToDate by derivedStateOf {
         profileCreated &&
                 installedMinecraftVersion == profile.minecraftVersion &&
@@ -188,6 +188,7 @@ class LaunchyState(
         updateNotPresent()
         if (!fabricUpToDate)
             installFabric()
+        updateServers()
         for (mod in queuedDownloads)
             launch(Dispatchers.IO) {
                 download(mod)
@@ -204,7 +205,6 @@ class LaunchyState(
                 }
             }
         }
-        updateServers()
     }
 
     fun updateServers() {
@@ -266,6 +266,7 @@ class LaunchyState(
             profile.fabricVersion,
         )
         println("Finished installing profile")
+        profileCreated = true
         installedFabricVersion = "Installing..."
         installedFabricVersion = profile.fabricVersion
         installedMinecraftVersion = "Installing..."
