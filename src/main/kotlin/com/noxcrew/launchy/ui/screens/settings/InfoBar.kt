@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.ui.screens.main.buttons.PlayButton
 import com.noxcrew.launchy.ui.screens.main.buttons.ProfileButton
+import com.noxcrew.launchy.ui.state.TopBar
 
 @Composable
 fun InfoBar(modifier: Modifier = Modifier) {
@@ -39,7 +40,7 @@ fun InfoBar(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(6.dp)
         ) {
-            PlayButton()
+            PlayButton(TopBar)
             Spacer(Modifier.width(10.dp))
             ProfileButton()
             Spacer(Modifier.width(10.dp))

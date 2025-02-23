@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.ui.screens.main.buttons.PlayButton
 import com.noxcrew.launchy.ui.screens.main.buttons.SettingsButton
+import com.noxcrew.launchy.ui.state.TopBar
 import com.noxcrew.launchy.ui.state.windowScope
 
 @Preview
@@ -41,7 +42,7 @@ fun MainScreen() {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().weight(1f),
             ) {
-                PlayButton()
+                PlayButton(TopBar)
                 Spacer(Modifier.width(10.dp))
                 SettingsButton()
             }

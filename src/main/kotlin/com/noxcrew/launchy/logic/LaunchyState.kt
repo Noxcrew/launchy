@@ -138,20 +138,22 @@ class LaunchyState(
                 installedMinecraftVersion == profile.minecraftVersion &&
                 installedFabricVersion == profile.fabricVersion
     }
+
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
     val installsQueued by derivedStateOf { queuedInstalls.isNotEmpty() }
     val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
-    val minecraftValid = Dirs.minecraft.exists()
+    val minecraftValid = (Dirs.minecraft / "launcher_profiles.json").exists()
     val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate }
 
     var errorMessage by mutableStateOf("")
     var importingProfile by mutableStateOf(false)
+    var startingLauncher by mutableStateOf(false)
 
     // If any state is true, we consider import handled and move on
     var handledImportOptions by mutableStateOf(
         config.handledImportOptions ||
                 (Dirs.mcclaunchy / "options.txt").exists() ||
-                !Dirs.minecraft.exists()
+                !minecraftValid
     )
 
     var handledFirstLaunch by mutableStateOf(config.handledFirstLaunch)
@@ -208,7 +210,7 @@ class LaunchyState(
     fun updateServers() {
         val serverFile = Dirs.mcclaunchy / "servers.dat"
         val file = if (serverFile.exists()) {
-            BinaryTagIO.unlimitedReader().read(serverFile, BinaryTagIO.Compression.GZIP)
+            BinaryTagIO.unlimitedReader().read(serverFile, BinaryTagIO.Compression.NONE)
         } else {
             CompoundBinaryTag.empty()
         }
@@ -224,10 +226,10 @@ class LaunchyState(
         if (existing.values.none { it == null }) return
 
         // Put all of our servers at the top whenever we make edits
-        val newServers = ListBinaryTag.empty()
+        var newServers = ListBinaryTag.empty()
         for ((server, current) in existing) {
             if (current == null) {
-                newServers.add(
+                newServers = newServers.add(
                     CompoundBinaryTag.from(
                         mapOf(
                             "acceptTextures" to ByteBinaryTag.ONE,
@@ -238,7 +240,7 @@ class LaunchyState(
                     )
                 )
             } else {
-                newServers.add(current)
+                newServers = newServers.add(current)
             }
         }
 
@@ -246,12 +248,12 @@ class LaunchyState(
         val serverIps = intended.map { it.ip }
         for (oldServer in servers) {
             if ((oldServer as? CompoundBinaryTag)?.getString("ip") !in serverIps) {
-                newServers.add(oldServer)
+                newServers = newServers.add(oldServer)
             }
         }
 
         // Update the file
-        BinaryTagIO.writer().write(file.put("servers", newServers), serverFile, BinaryTagIO.Compression.GZIP)
+        BinaryTagIO.writer().write(file.put("servers", newServers), serverFile, BinaryTagIO.Compression.NONE)
     }
 
     fun installFabric() {
