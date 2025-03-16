@@ -11,14 +11,14 @@ A custom installer which makes it easy to set up the recommended mods for MC Cha
 
 ## Screenshots
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/15234414/199800781-c9bf92d4-143a-46a3-a3b0-0188c8d7db39.png" width="846px">
-  <img src="https://user-images.githubusercontent.com/15234414/199800326-027d1824-b8b3-4c36-9a54-b93886795f0e.png" width="846px">
+  <img src="https://github.com/Noxcrew/launchy/tree/main/.github/image1.png" width="846px">
+  <img src="https://github.com/Noxcrew/launchy/tree/main/.github/image2.png" width="846px">
 </div>
 
 
 ## Instructions
 
-Install it from the [releases](https://github.com/Aeltumn/launchy/releases/latest), set up your preferences then launch the created profile in the regular Minecraft Launcher. You can re-run this installer to get mod updates!
+The installer cannot be downloaded as we only distribute it to participants playing in the MC Championship event. These sources are public to contribute our additions back to the open source ecosystem that created this project and for others to use our work and create their own versions.
 
 ## Features
 - Installs fabric into a 'MC Championship' profile
