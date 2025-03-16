@@ -4,6 +4,7 @@ groups:
   - name: Core Mods
     forceEnabled: true
   - name: Recommended Mods
+    startExpanded: true
   - name: Optional Mods
     enabledByDefault: false
 servers:

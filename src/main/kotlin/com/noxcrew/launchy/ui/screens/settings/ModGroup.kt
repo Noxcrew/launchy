@@ -24,7 +24,7 @@ import com.noxcrew.launchy.util.Option
 
 @Composable
 fun ModGroup(group: Group, mods: Collection<Mod>) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(group.startExpanded) }
     val arrowRotationState by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
     val state = LocalLaunchyState
 
