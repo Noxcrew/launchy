@@ -11,8 +11,8 @@ A custom installer which makes it easy to set up the recommended mods for MC Cha
 
 ## Screenshots
 <div align="center">
-  <img src="https://github.com/Noxcrew/launchy/tree/main/.github/image1.png" width="846px">
-  <img src="https://github.com/Noxcrew/launchy/tree/main/.github/image2.png" width="846px">
+  <img src="https://raw.githubusercontent.com/Noxcrew/launchy/refs/heads/main/.github/image1.png" width="846px">
+  <img src="https://raw.githubusercontent.com/Noxcrew/launchy/refs/heads/main/.github/image2.png" width="846px">
 </div>
 
 
