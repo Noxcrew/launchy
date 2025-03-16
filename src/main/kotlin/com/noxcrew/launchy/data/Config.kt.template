@@ -22,7 +22,7 @@ data class Config(
     val installedMinecraftVersion: String? = "1.21.4",
     val handledImportOptions: Boolean = false,
     val handledFirstLaunch: Boolean = false,
-    val profileUrl: String = "https://raw.githubusercontent.com/Aeltumn/launchy/main/versions.yml",
+    val profileUrl: String = "{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}"
 ) {
     fun save() {
         Dirs.configFile.writeText(Formats.yaml.encodeToString(this))

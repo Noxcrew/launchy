@@ -3,10 +3,6 @@ minecraftVersion: 1.21.4
 groups:
   - name: Core Mods
     forceEnabled: true
-  - name: Recommended Mods
-    startExpanded: true
-  - name: Optional Mods
-    enabledByDefault: false
 servers:
   - name: MCC Island
     ip: play.mccisland.net
@@ -67,27 +63,3 @@ modGroups:
       modrinthId: YL57xq9U
       desc: Adds shader support
       url: https://cdn.modrinth.com/data/YL57xq9U/versions/LZrmMq4i/iris-fabric-1.8.5%2Bmc1.21.4.jar
-
-  Recommended Mods:
-    - name: Logical Zoom
-      license: MIT
-      homepage: https://modrinth.com/mod/iris
-      modrinthId: 8bOImuGU
-      desc: Adds a simple zoom key
-      url: https://cdn.modrinth.com/data/8bOImuGU/versions/WBFUCF2C/logical_zoom-0.0.28.jar
-
-    - name: Toggle Sprint Display
-      license: LGPL-3
-      modrinthId: shVMaevq
-      homepage: https://modrinth.com/mod/toggle-sprint-display
-      desc: Shows whether toggle sprint is active on-screen
-      url: https://cdn.modrinth.com/data/shVMaevq/versions/MYOZbZxR/toggle-sprint-display-1.5.0.jar
-
-  Optional Mods:
-    - name: Flat Lighting
-      displayName: Flat Lighting (OptiFine Old Lighting)
-      license: LGPL-3
-      modrinthId: PXsE1tUn
-      homepage: https://modrinth.com/mod/flat-lighting
-      desc: Changes lighting to be similar to Optifine's Old Lighting option
-      url: https://cdn.modrinth.com/data/PXsE1tUn/versions/a51sGYbT/flat-lighting-1.3.0.jar

@@ -33,7 +33,9 @@ data class Versions(
             // Check against an environment variable that no user should ever have
             if (!ignoreLocal && System.getenv()["MCC_LAUNCHY_DEV"] == "13518961351") {
                 println("Reading from local versions")
-                val file = Path("versions.yml")
+
+                // Load from the example profile for testing locally
+                val file = Path("example-profile.yml")
                 Formats.yaml.decodeFromStream(serializer(), file.inputStream())
             } else {
                 println("Fetching latest versions from $url to ${target.absolutePathString()}")

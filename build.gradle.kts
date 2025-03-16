@@ -1,7 +1,7 @@
 import de.undercouch.gradle.tasks.download.Download
 import org.apache.tools.ant.taskdefs.condition.Os
-import org.gradle.internal.deployment.RunApplication
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -92,6 +92,11 @@ val composePackageDir = "$buildDir/compose/binaries/main/${
     }
 }"
 
+// Add the generated sources folder to the inputs
+sourceSets["main"].withConvention(conventionType = KotlinSourceSet::class) {
+    kotlin.srcDir("$buildDir/generated/kotlin")
+}
+
 tasks {
     val downloadAppImageBuilder by registering(Download::class) {
         src("https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage")
@@ -142,6 +147,21 @@ tasks {
             Os.isFamily(Os.FAMILY_MAC) -> dependsOn(dmgRelease)
             else -> dependsOn(executeAppImageBuilder)
         }
+    }
+
+    val generateKotlin by registering(Copy::class) {
+        from("src/main/kotlin/com/noxcrew/launchy/data/Config.kt.template")
+        into("$buildDir/generated/kotlin/com/noxcrew/launchy/data/")
+        val profileLocation = System.getenv("LAUNCHY_DEFAULT_PROFILE_LOCATION")
+            ?: throw GradleException("LAUNCHY_DEFAULT_PROFILE_LOCATION environment variable could not be found")
+
+        rename("Config.kt.template", "Config.kt")
+        filter {
+            it.replace("{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}", profileLocation)
+        }
+    }
+    named("compileKotlin") {
+        dependsOn(generateKotlin)
     }
 }
 
