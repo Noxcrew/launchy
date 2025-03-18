@@ -58,14 +58,9 @@ fun FirstLaunchDialog(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    """
-                        Launchy is a Minecraft Modpack Installer for Minecraft originally created by
-                        Mine in Abyss and updated by the Wynncraft team. This is a version configured
-                        to install recommended mods for MC Championship based on their original work.
-                        
+                    """                        
                         This program will install a MC Championship profile for you in the Minecraft launcher.
-                        If you don't have the official launcher installed, you can download it by clicking the button below.
-                        You can also select extra optional mods to install in the settings screen.                        
+                        If you don't have the official launcher installed, you can download it by clicking `Get Minecraft Launcher` below.
                     """.trimIndent(),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 10.dp),
@@ -81,7 +76,7 @@ fun FirstLaunchDialog(
                         Text("Get Minecraft Launcher", color = MaterialTheme.colorScheme.primary)
                     }
                     TextButton(onClick = onAccept) {
-                        Text("Ok", color = MaterialTheme.colorScheme.primary)
+                        Text("Continue", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
