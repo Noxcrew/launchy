@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CropSquare
-import androidx.compose.material.icons.rounded.Minimize
+import androidx.compose.material.icons.rounded.HorizontalRule
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -74,7 +74,7 @@ fun AppTopBar(
                 }
             }
             Row {
-                WindowButton(Icons.Rounded.Minimize) {
+                WindowButton(Icons.Rounded.HorizontalRule) {
                     state.windowState.isMinimized = true
                 }
                 WindowButton(Icons.Rounded.CropSquare) {
