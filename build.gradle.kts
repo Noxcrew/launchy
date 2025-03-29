@@ -47,7 +47,10 @@ tasks.withType<KotlinCompile> {
     )
 }
 
-val appName = "MCC Launcher"
+val appName = when {
+    Os.isFamily(Os.FAMILY_WINDOWS) -> "MCC Launcher"
+    else -> "mcclauncher"
+}
 
 compose.desktop {
     application {
