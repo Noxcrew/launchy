@@ -55,6 +55,14 @@ val appName = when {
 compose.desktop {
     application {
         mainClass = "com.noxcrew.launchy.MainKt"
+
+        buildTypes {
+            release {
+                // Proguard doesn't work on J21
+                proguard.isEnabled = false
+            }
+        }
+
         nativeDistributions {
             when {
                 Os.isFamily(Os.FAMILY_MAC) -> targetFormats(TargetFormat.Dmg)
