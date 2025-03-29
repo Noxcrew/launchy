@@ -75,7 +75,7 @@ fun InfoBar(barOnly: Boolean = false, modifier: Modifier = Modifier) {
                     shown = state.deletionsQueued,
                     icon = Icons.Rounded.Delete,
                     desc = "Will remove",
-                    extra = state.queuedDeletions.size.toString(),
+                    extra = (state.queuedDeletions.size + state.queuedRemovals.size).toString(),
                     suffix = "mods"
                 )
                 Spacer(Modifier.width(10.dp).weight(1f))

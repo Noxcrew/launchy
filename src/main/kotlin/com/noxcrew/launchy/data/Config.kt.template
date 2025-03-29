@@ -18,6 +18,7 @@ data class Config(
     val downloads: Map<ModName, DownloadURL> = mapOf(),
     val configs: Map<ModName, ConfigURL> = mapOf(),
     val seenGroups: Set<GroupName> = setOf(),
+    val installed: Set<ModName> = setOf(),
     val installedFabricVersion: String? = null,
     val installedMinecraftVersion: String? = "1.21.4",
     val handledImportOptions: Boolean = false,

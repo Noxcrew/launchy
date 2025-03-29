@@ -74,6 +74,7 @@ class LaunchyState(
 
     var installedFabricVersion by mutableStateOf(config.installedFabricVersion)
     var installedMinecraftVersion by mutableStateOf(config.installedMinecraftVersion)
+    var installedMods by mutableStateOf(config.installed)
 
     var notPresentDownloads by mutableStateOf(setOf<Mod>())
         private set
@@ -101,6 +102,9 @@ class LaunchyState(
     val queuedDeletions by derivedStateOf {
         _deleted
         disabledMods.filter { it.isDownloaded }.also { if (it.isEmpty()) updateNotPresent() }
+    }
+    val queuedRemovals by derivedStateOf {
+        installedMods - profile.nameToMod.keys.toSet()
     }
 
 
@@ -143,7 +147,7 @@ class LaunchyState(
 
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
     val installsQueued by derivedStateOf { queuedInstalls.isNotEmpty() }
-    val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
+    val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() || queuedRemovals.isNotEmpty() }
     val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate }
 
     var errorMessage by mutableStateOf(initialErrorMessage)
@@ -199,6 +203,20 @@ class LaunchyState(
             launch(Dispatchers.IO) {
                 try {
                     mod.file.deleteIfExists()
+                    installedMods = installedMods.minus(mod.name)
+                } catch (e: FileSystemException) {
+                    return@launch
+                } finally {
+                    _deleted++
+                }
+            }
+        }
+        for (mod in queuedRemovals) {
+            launch(Dispatchers.IO) {
+                try {
+                    val file = Dirs.mods / "${mod}.jar"
+                    file.deleteIfExists()
+                    installedMods = installedMods.minus(mod)
                 } catch (e: FileSystemException) {
                     return@launch
                 } finally {
@@ -284,6 +302,7 @@ class LaunchyState(
                         downloading[mod] = it
                     }
                     downloadURLs[mod] = mod.url
+                    installedMods = installedMods.plus(mod.name)
                     save()
                     println("Successfully downloaded ${mod.name}")
                 } catch (ex: CancellationException) {
