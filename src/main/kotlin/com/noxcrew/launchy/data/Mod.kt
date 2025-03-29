@@ -16,4 +16,19 @@ data class Mod(
     val dependency: Boolean = false,
     val incompatibleWith: List<String> = emptyList(),
     val requires: List<String> = emptyList(),
-)
+) {
+
+    // Compare only using the name!
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Mod) return false
+
+        if (name != other.name) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return name.hashCode()
+    }
+}

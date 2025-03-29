@@ -38,22 +38,7 @@ class LaunchyState(
     var profile by mutableStateOf(initialProfile)
     var profileUrl by mutableStateOf(config.profileUrl)
 
-    val enabledMods = mutableStateSetOf<Mod>().apply {
-        addAll(config.toggledMods.mapNotNull { it.toMod() })
-        val defaultEnabled = profile.groups
-            .filter { it.enabledByDefault }
-            .map { it.name } - config.seenGroups
-        val fullEnabled = config.fullEnabledGroups
-        val forceEnabled = profile.groups.filter { it.forceEnabled }.map { it.name }
-        val forceDisabled = profile.groups.filter { it.forceDisabled }
-        val fullDisabled = config.fullDisabledGroups
-        addAll(
-            ((fullEnabled + defaultEnabled + forceEnabled).toSet())
-                .mapNotNull { it.toGroup() }
-                .mapNotNull { profile.modGroups[it] }.flatten()
-        )
-        removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
-    }
+    val enabledMods = mutableStateSetOf<Mod>()
     val disabledMods: Set<Mod> by derivedStateOf { profile.nameToMod.values.toSet() - enabledMods }
 
     val downloadURLs = mutableStateMapOf<Mod, DownloadURL>().apply {
@@ -76,15 +61,12 @@ class LaunchyState(
     var installedMinecraftVersion by mutableStateOf(config.installedMinecraftVersion)
     var installedMods by mutableStateOf(config.installed)
 
-    var notPresentDownloads by mutableStateOf(setOf<Mod>())
-        private set
-
     init {
-        updateNotPresent()
+        updateEnabled()
     }
 
     val upToDateMods by derivedStateOf {
-        enabledMods.filter { it in downloadURLs && downloadURLs[it] == it.url && it !in notPresentDownloads }
+        enabledMods.filter { it in downloadURLs && downloadURLs[it] == it.url }
     }
 
     val upToDateConfigs by derivedStateOf {
@@ -95,14 +77,10 @@ class LaunchyState(
         enabledMods.filter { it.configUrl != "" }
     }
 
-    val queuedDownloads by derivedStateOf { (enabledMods - upToDateMods) + (enabledModsWithConfig - upToDateConfigs) }
+    val queuedDownloads by derivedStateOf { (enabledMods - upToDateMods.toSet()) + (enabledModsWithConfig - upToDateConfigs.toSet()) }
     val queuedUpdates by derivedStateOf { queuedDownloads.filter { it.isDownloaded }.toSet() }
     val queuedInstalls by derivedStateOf { queuedDownloads - queuedUpdates }
-    private var _deleted by mutableStateOf(0)
-    val queuedDeletions by derivedStateOf {
-        _deleted
-        disabledMods.filter { it.isDownloaded }.also { if (it.isEmpty()) updateNotPresent() }
-    }
+    val queuedDeletions by derivedStateOf { disabledMods.filter { it.isDownloaded } }
     val queuedRemovals by derivedStateOf {
         installedMods - profile.nameToMod.keys.toSet()
     }
@@ -190,15 +168,14 @@ class LaunchyState(
     }
 
     suspend fun update() = coroutineScope {
-        updateNotPresent()
         if (!fabricUpToDate)
             installFabric()
         updateServers()
-        for (mod in queuedDownloads)
+        for (mod in queuedDownloads) {
             launch(Dispatchers.IO) {
                 download(mod)
-                updateNotPresent()
             }
+        }
         for (mod in queuedDeletions) {
             launch(Dispatchers.IO) {
                 try {
@@ -206,8 +183,6 @@ class LaunchyState(
                     installedMods = installedMods.minus(mod.name)
                 } catch (e: FileSystemException) {
                     return@launch
-                } finally {
-                    _deleted++
                 }
             }
         }
@@ -219,8 +194,6 @@ class LaunchyState(
                     installedMods = installedMods.minus(mod)
                 } catch (e: FileSystemException) {
                     return@launch
-                } finally {
-                    _deleted++
                 }
             }
         }
@@ -364,6 +337,7 @@ class LaunchyState(
             downloads = downloadURLs.mapKeys { it.key.name },
             configs = downloadConfigURLs.mapKeys { it.key.name },
             seenGroups = profile.groups.map { it.name }.toSet(),
+            installed = installedMods.toSet(),
             installedFabricVersion = installedFabricVersion,
             installedMinecraftVersion = installedMinecraftVersion,
             handledImportOptions = handledImportOptions,
@@ -382,25 +356,25 @@ class LaunchyState(
     fun changeProfile(url: String, versions: Versions) {
         profileUrl = url
         profile = versions
-
-        enabledMods.clear()
-        enabledMods.apply {
-            val defaultEnabled = profile.groups
-                .filter { it.enabledByDefault }
-                .map { it.name }
-            val forceEnabled = profile.groups.filter { it.forceEnabled }.map { it.name }
-            val forceDisabled = profile.groups.filter { it.forceDisabled }
-            addAll(
-                ((defaultEnabled + forceEnabled).toSet())
-                    .mapNotNull { it.toGroup() }
-                    .mapNotNull { profile.modGroups[it] }.flatten()
-            )
-            removeAll((forceDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
-        }
+        updateEnabled() 
     }
 
-    private fun updateNotPresent(): Set<Mod> {
-        return downloadURLs.filter { !it.key.isDownloaded }.keys.also { notPresentDownloads = it }
+    private fun updateEnabled() {
+        enabledMods.clear()
+        enabledMods.addAll(config.toggledMods.mapNotNull { it.toMod() })
+        val defaultEnabled = profile.groups
+            .filter { it.enabledByDefault }
+            .map { it.name } - config.seenGroups
+        val fullEnabled = config.fullEnabledGroups
+        val forceEnabled = profile.groups.filter { it.forceEnabled }.map { it.name }
+        val forceDisabled = profile.groups.filter { it.forceDisabled }
+        val fullDisabled = config.fullDisabledGroups
+        enabledMods.addAll(
+            ((fullEnabled + defaultEnabled + forceEnabled).toSet())
+                .mapNotNull { it.toGroup() }
+                .mapNotNull { profile.modGroups[it] }.flatten()
+        )
+        enabledMods.removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
     }
 }
 
