@@ -50,7 +50,7 @@ fun main() {
         val launchyState by produceState<LaunchyState?>(null) {
             val config = Config.read()
             val versions = try {
-                Versions.readLatest(config.profileUrl, Dirs.versionsFile, ignoreLocal = true)
+                Versions.readLatest(config.profileUrl, Dirs.versionsFile)
             } catch (x: Throwable) {
                 x.printStackTrace()
                 errorMessage = "An error occurred while loading version information. Please contact an administrator for assistance!"

@@ -356,7 +356,7 @@ class LaunchyState(
     fun changeProfile(url: String, versions: Versions) {
         profileUrl = url
         profile = versions
-        updateEnabled() 
+        updateEnabled()
     }
 
     private fun updateEnabled() {
