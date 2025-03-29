@@ -27,6 +27,9 @@ import com.noxcrew.launchy.ui.rememberMIAColorScheme
 import com.noxcrew.launchy.ui.screens.Screens
 import com.noxcrew.launchy.ui.state.TopBarProvider
 import com.noxcrew.launchy.ui.state.TopBarState
+import com.noxcrew.launchy.util.OS
+import net.fabricmc.installer.util.Utils
+import java.io.InputStream
 import java.nio.file.Path
 import kotlin.io.path.div
 import kotlin.io.path.exists
@@ -40,15 +43,14 @@ val LocalLaunchyState: LaunchyState
 
 @ExperimentalComposeUiApi
 fun main() {
-    val version = System.getProperty("app.version") ?: "Development"
-    println("MCC Launchy $version")
+    println("MCC Launchy")
     application {
         val windowState = rememberWindowState(placement = WindowPlacement.Floating)
         var errorMessage = ""
         val launchyState by produceState<LaunchyState?>(null) {
             val config = Config.read()
             val versions = try {
-                Versions.readLatest(config.profileUrl, Dirs.versionsFile)
+                Versions.readLatest(config.profileUrl, Dirs.versionsFile, ignoreLocal = true)
             } catch (x: Throwable) {
                 x.printStackTrace()
                 errorMessage = "An error occurred while loading version information. Please contact an administrator for assistance!"
@@ -94,16 +96,6 @@ fun main() {
 }
 
 private val appIcon: Painter? by lazy {
-    // app.dir is set when packaged to point at our collected inputs.
-    val appDirProp = System.getProperty("app.dir")
-    val appDir = appDirProp?.let { Path.of(it) }
-    // On Windows we should use the .ico file. On Linux, there's no native compound image format and Compose can't render SVG icons,
-    // so we pick the 128x128 icon and let the frameworks/desktop environment rescale.
-    var iconPath = appDir?.resolve("app.ico")?.takeIf { it.exists() }
-    iconPath = iconPath ?: appDir?.resolve("icon-square-128.png")?.takeIf { it.exists() }
-    if (iconPath?.exists() == true) {
-        BitmapPainter(iconPath.inputStream().buffered().use { loadImageBitmap(it) })
-    } else {
-        null
-    }
+    val input: InputStream = Utils::class.java.classLoader.getResourceAsStream("icon.png") ?: return@lazy null
+    BitmapPainter(input.buffered().use { loadImageBitmap(it) })
 }
