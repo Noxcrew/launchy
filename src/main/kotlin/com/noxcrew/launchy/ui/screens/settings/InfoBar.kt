@@ -61,19 +61,22 @@ fun InfoBar(barOnly: Boolean = false, modifier: Modifier = Modifier) {
                     shown = state.updatesQueued,
                     icon = Icons.Rounded.Update,
                     desc = "Will update",
-                    extra = state.queuedUpdates.size.toString()
+                    extra = state.queuedUpdates.size.toString(),
+                    suffix = "mods"
                 )
                 ActionButton(
                     shown = state.installsQueued,
                     icon = Icons.Rounded.Download,
                     desc = "Will download",
-                    extra = state.queuedInstalls.size.toString()
+                    extra = state.queuedInstalls.size.toString(),
+                    suffix = "mods"
                 )
                 ActionButton(
                     shown = state.deletionsQueued,
                     icon = Icons.Rounded.Delete,
                     desc = "Will remove",
-                    extra = state.queuedDeletions.size.toString()
+                    extra = state.queuedDeletions.size.toString(),
+                    suffix = "mods"
                 )
                 Spacer(Modifier.width(10.dp).weight(1f))
             }
@@ -113,7 +116,7 @@ fun InfoBar(barOnly: Boolean = false, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ActionButton(shown: Boolean, icon: ImageVector, desc: String, extra: String = "") {
+fun ActionButton(shown: Boolean, icon: ImageVector, desc: String, extra: String = "", suffix: String = "") {
     AnimatedVisibility(shown) {
         var toggled by remember { mutableStateOf(false) }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -124,6 +127,9 @@ fun ActionButton(shown: Boolean, icon: ImageVector, desc: String, extra: String 
                 Text(desc, Modifier.padding(end = 5.dp))
             }
             Text(extra)
+            AnimatedVisibility(toggled) {
+                Text(suffix, Modifier.padding(start = 5.dp))
+            }
         }
     }
 }

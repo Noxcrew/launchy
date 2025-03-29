@@ -51,7 +51,7 @@ fun main() {
                 Versions.readLatest(config.profileUrl, Dirs.versionsFile)
             } catch (x: Throwable) {
                 x.printStackTrace()
-                errorMessage = "An error occurred while loading version information. Please contact and administrator for assistance!"
+                errorMessage = "An error occurred while loading version information. Please contact an administrator for assistance!"
                 Versions(valid = false)
             }
             value = LaunchyState(config, versions, errorMessage)

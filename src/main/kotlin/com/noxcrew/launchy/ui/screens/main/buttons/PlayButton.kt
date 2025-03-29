@@ -41,7 +41,7 @@ fun PlayButton(
         onClick = {
             if (!state.profile.valid) {
                 state.errorMessage = """
-                    An error occurred while loading version information. Please contact and administrator for assistance!
+                    An error occurred while loading version information. Please contact an administrator for assistance!
                 """.trimIndent()
                 return@Button
             }

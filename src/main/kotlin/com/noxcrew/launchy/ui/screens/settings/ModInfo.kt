@@ -144,7 +144,7 @@ fun ModInfo(group: Group, mod: Mod) {
                         modifier = Modifier.alpha(0.5f),
                         tooltip = {
                             Text(
-                                text = "Open homepage",
+                                text = "Open Homepage",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }

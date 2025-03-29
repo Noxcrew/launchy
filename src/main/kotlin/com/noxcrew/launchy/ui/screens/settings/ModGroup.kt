@@ -2,6 +2,7 @@ package com.noxcrew.launchy.ui.screens.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,11 +11,13 @@ import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.ChangeCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltipBox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
@@ -61,7 +64,17 @@ fun ModGroup(group: Group, mods: Collection<Mod>) {
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 AnimatedVisibility(modsChanged) {
-                    Icon(Icons.Rounded.ChangeCircle, "Updated")
+                    TooltipArea(
+                        modifier = Modifier.alpha(0.5f),
+                        tooltip = {
+                            Text(
+                                text = "Mods in this group have changed",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    ) {
+                        Icon(Icons.Rounded.ChangeCircle, "Updated")
+                    }
                 }
                 Spacer(Modifier.width(10.dp))
                 Icon(Icons.Rounded.ArrowDropDown, "Show mods", Modifier.rotate(arrowRotationState))
