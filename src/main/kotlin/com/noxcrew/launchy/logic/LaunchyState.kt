@@ -33,6 +33,7 @@ class LaunchyState(
     // Config should never be mutated unless it also updates UI state
     private val config: Config,
     initialProfile: Versions,
+    initialErrorMessage: String,
 ) {
     var profile by mutableStateOf(initialProfile)
     var profileUrl by mutableStateOf(config.profileUrl)
@@ -145,7 +146,7 @@ class LaunchyState(
     val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
     val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate }
 
-    var errorMessage by mutableStateOf("")
+    var errorMessage by mutableStateOf(initialErrorMessage)
     var importingProfile by mutableStateOf(false)
     var startingLauncher by mutableStateOf(false)
 

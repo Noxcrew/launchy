@@ -28,6 +28,7 @@ import com.noxcrew.launchy.ui.screens.Screens
 import com.noxcrew.launchy.ui.state.TopBarProvider
 import com.noxcrew.launchy.ui.state.TopBarState
 import java.nio.file.Path
+import kotlin.io.path.div
 import kotlin.io.path.exists
 import kotlin.io.path.inputStream
 
@@ -43,10 +44,17 @@ fun main() {
     println("MCC Launchy $version")
     application {
         val windowState = rememberWindowState(placement = WindowPlacement.Floating)
+        var errorMessage = ""
         val launchyState by produceState<LaunchyState?>(null) {
             val config = Config.read()
-            val versions = Versions.readLatest(config.profileUrl, Dirs.versionsFile)
-            value = LaunchyState(config, versions)
+            val versions = try {
+                Versions.readLatest(config.profileUrl, Dirs.versionsFile)
+            } catch (x: Throwable) {
+                x.printStackTrace()
+                errorMessage = "An error occurred while loading version information. Please contact and administrator for assistance!"
+                Versions(valid = false)
+            }
+            value = LaunchyState(config, versions, errorMessage)
         }
         val onClose: () -> Unit = {
             exitApplication()

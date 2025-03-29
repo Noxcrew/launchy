@@ -39,6 +39,13 @@ fun PlayButton(
     Button(
         enabled = !state.startingLauncher && state.minecraftValid && !state.updating,
         onClick = {
+            if (!state.profile.valid) {
+                state.errorMessage = """
+                    An error occurred while loading version information. Please contact and administrator for assistance!
+                """.trimIndent()
+                return@Button
+            }
+
             if (!state.startingLauncher && state.minecraftValid && !state.updating) {
                 if (state.operationsQueued) {
                     coroutineScope.launch {

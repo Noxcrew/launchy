@@ -13,12 +13,13 @@ import kotlin.io.path.inputStream
 
 @Serializable
 data class Versions(
-    val groups: Set<Group>,
+    val groups: Set<Group> = emptySet(),
     @SerialName("modGroups")
-    private val _modGroups: Map<GroupName, Set<Mod>>,
+    private val _modGroups: Map<GroupName, Set<Mod>> = emptyMap(),
     val servers: Set<Server> = emptySet(),
-    val fabricVersion: String,
-    val minecraftVersion: String
+    val fabricVersion: String = "",
+    val minecraftVersion: String = "",
+    val valid: Boolean = true,
 ) {
     val nameToGroup: Map<GroupName, Group> = groups.associateBy { it.name }
 
