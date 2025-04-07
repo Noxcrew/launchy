@@ -80,6 +80,7 @@ fun PlayButton(
                             OS.MAC -> "/Applications/Minecraft.app/Contents/MacOS/launcher"
                             OS.LINUX -> "minecraft-launcher"
                         }
+                        println("Running process $path")
                         ProcessBuilder(listOf(path)).start()
                     } catch (x: Throwable) {
                         x.printStackTrace()
