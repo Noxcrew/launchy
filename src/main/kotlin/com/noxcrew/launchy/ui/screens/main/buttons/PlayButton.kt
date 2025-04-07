@@ -87,14 +87,19 @@ fun PlayButton(
                     }
 
                     // If the regular one didn't work, use "minecraft" protocol for UWP Minecraft Launcher
-                    if (errors == 1) {
-                        try {
-                            val command = listOf("powershell.exe", "start", "shell:AppsFolder\\Microsoft.4297127D64EC6_8wekyb3d8bbwe!Minecraft")
-                            ProcessBuilder(command).start()
-                        } catch (x: Throwable) {
-                            x.printStackTrace()
-                            errors++
+                    if (OS.get() == OS.WINDOWS) {
+                        if (errors == 1) {
+                            try {
+                                val command = listOf("powershell.exe", "start", "shell:AppsFolder\\Microsoft.4297127D64EC6_8wekyb3d8bbwe!Minecraft")
+                                ProcessBuilder(command).start()
+                            } catch (x: Throwable) {
+                                x.printStackTrace()
+                                errors++
+                            }
                         }
+                    } else {
+                        // Outside of windows don't try to boot up the store version!
+                        errors++
                     }
 
                     // If both launchers errored we show a warning!

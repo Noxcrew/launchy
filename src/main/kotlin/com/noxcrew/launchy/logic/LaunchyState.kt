@@ -66,7 +66,7 @@ class LaunchyState(
     }
 
     val upToDateMods by derivedStateOf {
-        enabledMods.filter { it in downloadURLs && downloadURLs[it] == it.url }
+        enabledMods.filter { it.isDownloaded && it in downloadURLs && downloadURLs[it] == it.url }
     }
 
     val upToDateConfigs by derivedStateOf {
