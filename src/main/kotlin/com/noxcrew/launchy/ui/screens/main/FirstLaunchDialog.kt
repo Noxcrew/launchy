@@ -35,6 +35,8 @@ fun FirstLaunchDialog(
     windowScope: WindowScope,
     onAccept: () -> Unit,
 ) {
+    val state = LocalLaunchyState
+
     // Overlay that prevents clicking behind it
     windowScope.WindowDraggableArea {
         Box(Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)).fillMaxSize())
@@ -71,7 +73,7 @@ fun FirstLaunchDialog(
                     horizontalArrangement = Arrangement.End,
                 ) {
                     TextButton(onClick = {
-                        Browser.browse("https://www.minecraft.net/en-us/download/")
+                        Browser.browse("https://www.minecraft.net/en-us/download/", state)
                     }) {
                         Text("Get Minecraft Launcher", color = MaterialTheme.colorScheme.primary)
                     }

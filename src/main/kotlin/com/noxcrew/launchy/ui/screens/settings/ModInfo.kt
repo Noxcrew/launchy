@@ -2,13 +2,35 @@ package com.noxcrew.launchy.ui.screens.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -18,12 +40,31 @@ import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.data.Group
 import com.noxcrew.launchy.data.Mod
+import com.noxcrew.launchy.logic.LaunchyState
+import com.noxcrew.launchy.util.OS
 import java.awt.Desktop
 import java.net.URI
 
 object Browser {
     val desktop = Desktop.getDesktop()
-    fun browse(url: String) = synchronized(desktop) { desktop.browse(URI.create(url)) }
+    fun browse(url: String, state: LaunchyState) {
+        // On MacOS use the open command line argument
+        if (OS.get() == OS.MAC) {
+            Runtime.getRuntime().exec(arrayOf("open", url))
+            return
+        }
+
+        // On other operating systems we use the desktop browse functionality
+        if (Desktop.isDesktopSupported()) {
+            synchronized(desktop) {
+                if (desktop.isSupported(Desktop.Action.BROWSE)) {
+                    desktop.browse(URI.create(url))
+                    return
+                }
+            }
+        }
+        state.errorMessage = "Couldn't open a browser window, please manually visit:\n$url"
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -86,8 +127,7 @@ fun ModInfo(group: Group, mod: Mod) {
                                             modifier = Modifier.padding(4.dp),
                                             style = MaterialTheme.typography.labelMedium
                                         )
-                                    }
-                                    else {
+                                    } else {
                                         if (mod.requires.isNotEmpty()) {
                                             Text(
                                                 text = "Requires: ${mod.requires.joinToString()}",
@@ -151,7 +191,7 @@ fun ModInfo(group: Group, mod: Mod) {
                     ) {
                         IconButton(
                             modifier = Modifier.alpha(0.5f),
-                            onClick = { Browser.browse(mod.homepage) }
+                            onClick = { Browser.browse(mod.homepage, state) }
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.OpenInNew,
