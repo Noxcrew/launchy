@@ -30,7 +30,10 @@ data class Versions(
         .associateBy { it.name }
 
     companion object {
-        suspend fun readLatest(url: String, target: Path, ignoreLocal: Boolean = false): Versions = withContext(Dispatchers.IO) {
+        /** If true, local configs are used for testing. */
+        private const val DEBUGGING_LOCAL_CONFIGS: Boolean = false
+
+        suspend fun readLatest(url: String, target: Path, ignoreLocal: Boolean = !DEBUGGING_LOCAL_CONFIGS): Versions = withContext(Dispatchers.IO) {
             // Check against an environment variable that no user should ever have
             if (!ignoreLocal && System.getenv()["MCC_LAUNCHY_DEV"] == "13518961351") {
                 println("Reading from local versions")

@@ -28,7 +28,7 @@ fun UpdateInfoButton() {
         Column {
             Row {
                 Icon(Icons.Rounded.Update, contentDescription = "Updates")
-                Text("${state.queuedDownloads.size + state.queuedDeletions.size + state.queuedRemovals.size} Updates")
+                Text("${state.queuedDownloads.size + state.queuedDeletions.size} Updates")
             }
 
             AnimatedVisibility(
@@ -58,7 +58,7 @@ fun UpdateInfoButton() {
                         shown = state.deletionsQueued,
                         icon = Icons.Rounded.Delete,
                         desc = "Remove",
-                        extra = (state.queuedDeletions.size + state.queuedRemovals.size).toString()
+                        extra = state.queuedDeletions.size.toString()
                     )
                 }
             }

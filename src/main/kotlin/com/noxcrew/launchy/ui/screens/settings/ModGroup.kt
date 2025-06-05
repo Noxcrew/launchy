@@ -31,7 +31,7 @@ fun ModGroup(group: Group, mods: Collection<Mod>) {
     val arrowRotationState by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
     val state = LocalLaunchyState
 
-    val modsChanged = mods.any { it in state.queuedDeletions || it in state.queuedDownloads }
+    val modsChanged = mods.any { it.name in state.queuedDeletions || it in state.queuedDownloads }
 
     Surface(
         tonalElevation = 1.dp,

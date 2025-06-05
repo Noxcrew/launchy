@@ -23,7 +23,6 @@ import net.kyori.adventure.nbt.ByteBinaryTag
 import net.kyori.adventure.nbt.CompoundBinaryTag
 import net.kyori.adventure.nbt.ListBinaryTag
 import net.kyori.adventure.nbt.StringBinaryTag
-import java.util.Collections
 import java.util.concurrent.CancellationException
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.div
@@ -38,8 +37,9 @@ class LaunchyState(
     var profile by mutableStateOf(initialProfile)
     var profileUrl by mutableStateOf(config.profileUrl)
 
-    val enabledMods = mutableStateSetOf<Mod>()
+    var enabledMods: Set<Mod> by mutableStateOf(emptySet())
     val disabledMods: Set<Mod> by derivedStateOf { profile.nameToMod.values.toSet() - enabledMods }
+    var downloadedMods: Iterable<Mod> by mutableStateOf(profile.nameToMod.values.filter { it.isDownloaded })
 
     val downloadURLs = mutableStateMapOf<Mod, DownloadURL>().apply {
         putAll(
@@ -66,7 +66,7 @@ class LaunchyState(
     }
 
     val upToDateMods by derivedStateOf {
-        enabledMods.filter { it.isDownloaded && it in downloadURLs && downloadURLs[it] == it.url }
+        enabledMods.filter { it in downloadedMods && it in downloadURLs && downloadURLs[it] == it.url }
     }
 
     val upToDateConfigs by derivedStateOf {
@@ -77,18 +77,15 @@ class LaunchyState(
         enabledMods.filter { it.configUrl != "" }
     }
 
-    val queuedDownloads by derivedStateOf { (enabledMods - upToDateMods.toSet()) + (enabledModsWithConfig - upToDateConfigs.toSet()) }
-    val queuedUpdates by derivedStateOf { queuedDownloads.filter { it.isDownloaded }.toSet() }
+    val queuedDownloads by derivedStateOf {(enabledMods - upToDateMods.toSet()) + (enabledModsWithConfig - upToDateConfigs.toSet()) }
+    val queuedUpdates by derivedStateOf { queuedDownloads.filter { it in downloadedMods }.toSet() }
     val queuedInstalls by derivedStateOf { queuedDownloads - queuedUpdates }
-    val queuedDeletions by derivedStateOf { disabledMods.filter { it.isDownloaded } }
-    val queuedRemovals by derivedStateOf {
-        installedMods - profile.nameToMod.keys.toSet()
+    val queuedDeletions: List<ModName> by derivedStateOf {
+        disabledMods.filter { it in downloadedMods }.map { it.name } +
+                (installedMods - profile.nameToMod.keys.toSet())
     }
 
-
-    val enabledConfigs: MutableSet<Mod> = mutableStateSetOf<Mod>().apply {
-        addAll(config.toggledConfigs.mapNotNull { it.toMod() })
-    }
+    var enabledConfigs: Set<Mod> by mutableStateOf(config.toggledConfigs.mapNotNull { it.toMod() }.toSet())
 
     init {
         // trigger update incase we have dependencies
@@ -99,7 +96,7 @@ class LaunchyState(
     val downloading = mutableStateMapOf<Mod, Progress>()
     val downloadingConfigs = mutableStateMapOf<Mod, Progress>()
     val isDownloading by derivedStateOf { downloading.isNotEmpty() || downloadingConfigs.isNotEmpty() }
-    val failedDownloads = mutableStateSetOf<Mod>()
+    var failedDownloads by mutableStateOf(emptySet<Mod>())
 
     // Caclculate the speed of the download
     val downloadSpeed by derivedStateOf {
@@ -125,7 +122,7 @@ class LaunchyState(
 
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
     val installsQueued by derivedStateOf { queuedInstalls.isNotEmpty() }
-    val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() || queuedRemovals.isNotEmpty() }
+    val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
     val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate }
 
     var errorMessage by mutableStateOf(initialErrorMessage)
@@ -156,15 +153,14 @@ class LaunchyState(
                 mod.requires.contains(dep.name)  // if the mod depends on this dependency
                         && dep.dependency // if the dependency is marked as a dependency
                         && enabledMods.none { it.requires.contains(dep.name) }  // and no other mod depends on this dependency
-//                        && !versions.modGroups.filterValues { it.contains(dep) }.keys.any { it.forceEnabled } // and the group the dependency is in is not force enabled
+                        && !profile.modGroups.filterValues { it.contains(dep) }.keys.any { it.forceEnabled } // and the group the dependency is in is not force enabled
             }.forEach { setModEnabled(it, false) }
         }
         setModConfigEnabled(mod, enabled)
     }
 
     fun setModConfigEnabled(mod: Mod, enabled: Boolean) {
-        if (mod.configUrl.isNotBlank() && enabled) enabledConfigs.add(mod)
-        else enabledConfigs.remove(mod)
+        enabledConfigs = if (mod.configUrl.isNotBlank() && enabled) enabledConfigs.plus(mod) else enabledConfigs.minus(mod)
     }
 
     suspend fun update() = coroutineScope {
@@ -179,19 +175,12 @@ class LaunchyState(
         for (mod in queuedDeletions) {
             launch(Dispatchers.IO) {
                 try {
-                    mod.file.deleteIfExists()
-                    installedMods = installedMods.minus(mod.name)
-                } catch (e: FileSystemException) {
-                    return@launch
-                }
-            }
-        }
-        for (mod in queuedRemovals) {
-            launch(Dispatchers.IO) {
-                try {
+                    println("Starting deletion of $mod")
                     val file = Dirs.mods / "${mod}.jar"
                     file.deleteIfExists()
+                    downloadedMods = downloadedMods.filter { it.name != mod }
                     installedMods = installedMods.minus(mod)
+                    println("Successfully deleted $mod")
                 } catch (e: FileSystemException) {
                     return@launch
                 }
@@ -276,6 +265,9 @@ class LaunchyState(
                     }
                     downloadURLs[mod] = mod.url
                     installedMods = installedMods.plus(mod.name)
+                    if (mod.isDownloaded) {
+                        downloadedMods += mod
+                    }
                     save()
                     println("Successfully downloaded ${mod.name}")
                 } catch (ex: CancellationException) {
@@ -356,12 +348,11 @@ class LaunchyState(
     fun changeProfile(url: String, versions: Versions) {
         profileUrl = url
         profile = versions
+        downloadedMods = profile.nameToMod.values.filter { it.isDownloaded }
         updateEnabled()
     }
 
     private fun updateEnabled() {
-        enabledMods.clear()
-        enabledMods.addAll(config.toggledMods.mapNotNull { it.toMod() })
         val defaultEnabled = profile.groups
             .filter { it.enabledByDefault }
             .map { it.name } - config.seenGroups
@@ -369,13 +360,14 @@ class LaunchyState(
         val forceEnabled = profile.groups.filter { it.forceEnabled }.map { it.name }
         val forceDisabled = profile.groups.filter { it.forceDisabled }
         val fullDisabled = config.fullDisabledGroups
-        enabledMods.addAll(
+
+        val enabled = config.toggledMods.mapNotNull { it.toMod() }.toMutableSet()
+        enabled.addAll(
             ((fullEnabled + defaultEnabled + forceEnabled).toSet())
                 .mapNotNull { it.toGroup() }
                 .mapNotNull { profile.modGroups[it] }.flatten()
         )
-        enabledMods.removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
+        enabled.removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
+        enabledMods = enabled
     }
 }
-
-fun <T> mutableStateSetOf() = Collections.newSetFromMap(mutableStateMapOf<T, Boolean>())
