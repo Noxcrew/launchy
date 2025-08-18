@@ -110,7 +110,7 @@ sourceSets["main"].withConvention(conventionType = KotlinSourceSet::class) {
 
 tasks {
     val downloadAppImageBuilder by registering(Download::class) {
-        src("https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage")
+        src("https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage")
         dest(appImageTool)
         doLast {
             exec {
