@@ -24,9 +24,14 @@ import net.kyori.adventure.nbt.CompoundBinaryTag
 import net.kyori.adventure.nbt.ListBinaryTag
 import net.kyori.adventure.nbt.StringBinaryTag
 import java.util.concurrent.CancellationException
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.copyTo
+import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.div
 import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
+import kotlin.io.path.walk
 
 class LaunchyState(
     // Config should never be mutated unless it also updates UI state
@@ -77,7 +82,7 @@ class LaunchyState(
         enabledMods.filter { it.configUrl != "" }
     }
 
-    val queuedDownloads by derivedStateOf {(enabledMods - upToDateMods.toSet()) + (enabledModsWithConfig - upToDateConfigs.toSet()) }
+    val queuedDownloads by derivedStateOf { (enabledMods - upToDateMods.toSet()) + (enabledModsWithConfig - upToDateConfigs.toSet()) }
     val queuedUpdates by derivedStateOf { queuedDownloads.filter { it in downloadedMods }.toSet() }
     val queuedInstalls by derivedStateOf { queuedDownloads - queuedUpdates }
     val queuedDeletions: List<ModName> by derivedStateOf {
@@ -237,6 +242,7 @@ class LaunchyState(
         BinaryTagIO.writer().write(file.put("servers", newServers), serverFile, BinaryTagIO.Compression.NONE)
     }
 
+    @OptIn(ExperimentalPathApi::class)
     fun installFabric() {
         FabricInstaller.installToLauncher(
             Dirs.minecraft,
@@ -252,6 +258,26 @@ class LaunchyState(
         installedFabricVersion = profile.fabricVersion
         installedMinecraftVersion = "Installing..."
         installedMinecraftVersion = profile.minecraftVersion
+
+        // Move all mods into a separate folder so the user does not
+        // get confused when a mod for an older version stops working
+        val intendedMods = profile.nameToMod.values.map { it.file }
+        Dirs.mods.walk().forEach { file ->
+            // Ignore directories
+            if (file.isDirectory()) return@forEach
+
+            // We can ignore mods that we intended to have!
+            if (file in intendedMods) return@forEach
+
+            // Create the target folder
+            if (!Dirs.previousMods.exists()) {
+                Dirs.previousMods.createDirectories()
+            }
+
+            // Copy the mod across to the previous mods folder
+            file.copyTo(Dirs.previousMods.resolve(Dirs.mods.relativize(file)), overwrite = true)
+            file.deleteIfExists()
+        }
     }
 
     suspend fun download(mod: Mod) {

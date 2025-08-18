@@ -17,6 +17,7 @@ object Dirs {
         OS.LINUX -> Path(System.getProperty("user.home")) / ".mcclaunchy"
     }
     val mods = mcclaunchy / "mods"
+    val previousMods = mcclaunchy / "previous-mods"
     val tmp = mcclaunchy / ".tmp"
 
     val config = when (OS.get()) {
