@@ -105,7 +105,7 @@ fun ImportProfileDialog(
                     TextButton(onClick = {
                         state.importingProfile = false
                     }) {
-                        Text("Discard")
+                        Text("Close")
                     }
                 }
             }
