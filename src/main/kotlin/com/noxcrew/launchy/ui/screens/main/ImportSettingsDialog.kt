@@ -42,10 +42,12 @@ fun HandleImportSettings() {
                 }
                 screen = Screen.Settings
                 state.handledImportOptions = true
+                state.save()
             },
             onDecline = {
                 screen = Screen.Settings
                 state.handledImportOptions = true
+                state.save()
             }
         )
     }

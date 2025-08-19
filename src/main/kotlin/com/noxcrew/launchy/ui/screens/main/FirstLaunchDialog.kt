@@ -25,6 +25,7 @@ fun FirstLaunchDialog() {
             windowScope,
             onAccept = {
                 state.handledFirstLaunch = true
+                state.save()
             }
         )
     }

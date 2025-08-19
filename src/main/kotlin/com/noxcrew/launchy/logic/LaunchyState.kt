@@ -162,6 +162,7 @@ class LaunchyState(
             }.forEach { setModEnabled(it, false) }
         }
         setModConfigEnabled(mod, enabled)
+        save()
     }
 
     fun setModConfigEnabled(mod: Mod, enabled: Boolean) {
@@ -191,6 +192,7 @@ class LaunchyState(
                 }
             }
         }
+        save()
     }
 
     fun updateServers() {
@@ -294,7 +296,6 @@ class LaunchyState(
                     if (mod.isDownloaded) {
                         downloadedMods += mod
                     }
-                    save()
                     println("Successfully downloaded ${mod.name}")
                 } catch (ex: CancellationException) {
                     throw ex // Must let the CancellationException propagate
@@ -318,7 +319,6 @@ class LaunchyState(
                     downloadConfigURLs[mod] = mod.configUrl
                     unzip(mod.config.toFile(), Dirs.mcclaunchy.toString())
                     mod.config.toFile().delete()
-                    save()
                     println("Successfully downloaded ${mod.name} config")
                 } catch (ex: CancellationException) {
                     throw ex // Must let the CancellationException propagate
@@ -344,26 +344,6 @@ class LaunchyState(
         }
     }
 
-    fun save() {
-        config.copy(
-            fullEnabledGroups = profile.modGroups
-                .filter { enabledMods.containsAll(it.value) }.keys
-                .map { it.name }.toSet(),
-            toggledMods = enabledMods.mapTo(mutableSetOf()) { it.name },
-            toggledConfigs = enabledConfigs.mapTo(mutableSetOf()) { it.name } + enabledMods.filter { it.forceConfigDownload }
-                .mapTo(mutableSetOf()) { it.name },
-            downloads = downloadURLs.mapKeys { it.key.name },
-            configs = downloadConfigURLs.mapKeys { it.key.name },
-            seenGroups = profile.groups.map { it.name }.toSet(),
-            installed = installedMods.toSet(),
-            installedFabricVersion = installedFabricVersion,
-            installedMinecraftVersion = installedMinecraftVersion,
-            handledImportOptions = handledImportOptions,
-            handledFirstLaunch = handledFirstLaunch,
-            profileUrl = profileUrl,
-        ).save()
-    }
-
     fun ModName.toMod(): Mod? = profile.nameToMod[this]
     fun GroupName.toGroup(): Group? = profile.nameToGroup[this]
 
@@ -376,6 +356,7 @@ class LaunchyState(
         profile = versions
         downloadedMods = profile.nameToMod.values.filter { it.isDownloaded }
         updateEnabled()
+        save()
     }
 
     private fun updateEnabled() {
@@ -395,5 +376,25 @@ class LaunchyState(
         )
         enabled.removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
         enabledMods = enabled
+    }
+
+    fun save() {
+        config.copy(
+            fullEnabledGroups = profile.modGroups
+                .filter { enabledMods.containsAll(it.value) }.keys
+                .map { it.name }.toSet(),
+            toggledMods = enabledMods.mapTo(mutableSetOf()) { it.name },
+            toggledConfigs = enabledConfigs.mapTo(mutableSetOf()) { it.name } + enabledMods.filter { it.forceConfigDownload }
+                .mapTo(mutableSetOf()) { it.name },
+            downloads = downloadURLs.mapKeys { it.key.name },
+            configs = downloadConfigURLs.mapKeys { it.key.name },
+            seenGroups = profile.groups.map { it.name }.toSet(),
+            installed = installedMods.toSet(),
+            installedFabricVersion = installedFabricVersion,
+            installedMinecraftVersion = installedMinecraftVersion,
+            handledImportOptions = handledImportOptions,
+            handledFirstLaunch = handledFirstLaunch,
+            profileUrl = profileUrl,
+        ).save()
     }
 }
