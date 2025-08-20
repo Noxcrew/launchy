@@ -94,7 +94,7 @@ class LaunchyState(
 
     init {
         // trigger update incase we have dependencies
-        enabledMods.forEach { setModEnabled(it, true) }
+        enabledMods.forEach { setModEnabled(it, true, save = false) }
     }
 
     var updating by mutableStateOf(false)
@@ -143,26 +143,26 @@ class LaunchyState(
 
     var handledFirstLaunch by mutableStateOf(config.handledFirstLaunch)
 
-    fun setModEnabled(mod: Mod, enabled: Boolean) {
+    fun setModEnabled(mod: Mod, enabled: Boolean, save: Boolean = true) {
         if (enabled) {
             enabledMods += mod
             enabledMods.filter { it.name in mod.incompatibleWith || it.incompatibleWith.contains(mod.name) }
-                .forEach { setModEnabled(it, false) }
-            disabledMods.filter { it.name in mod.requires }.forEach { setModEnabled(it, true) }
+                .forEach { setModEnabled(it, false, save = false) }
+            disabledMods.filter { it.name in mod.requires }.forEach { setModEnabled(it, true, save = false) }
         } else {
             enabledMods -= mod
             // if a mod is disabled, disable all mods that depend on it
-            enabledMods.filter { it.requires.contains(mod.name) }.forEach { setModEnabled(it, false) }
+            enabledMods.filter { it.requires.contains(mod.name) }.forEach { setModEnabled(it, false, save = false) }
             // if a mod is disabled, and the dependency is only used by this mod, disable the dependency too, unless it's not marked as a dependency
             enabledMods.filter { dep ->
                 mod.requires.contains(dep.name)  // if the mod depends on this dependency
                         && dep.dependency // if the dependency is marked as a dependency
                         && enabledMods.none { it.requires.contains(dep.name) }  // and no other mod depends on this dependency
                         && !profile.modGroups.filterValues { it.contains(dep) }.keys.any { it.forceEnabled } // and the group the dependency is in is not force enabled
-            }.forEach { setModEnabled(it, false) }
+            }.forEach { setModEnabled(it, false, save = false) }
         }
         setModConfigEnabled(mod, enabled)
-        save()
+        if (save) save()
     }
 
     fun setModConfigEnabled(mod: Mod, enabled: Boolean) {
