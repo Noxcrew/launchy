@@ -85,7 +85,7 @@ object FabricInstaller {
         Files.deleteIfExists(dummyJar)
         Files.createFile(dummyJar)
         val profileJson: Json = FabricService.queryMetaJson("v2/versions/loader/$gameVersion/$loaderVersion/profile/json")
-        Utils.writeToFile(profileJsonPath, profileJson.toString())
+        Utils.writeToFile(profileJsonPath, profileJson.toString().replace("fabric-loader-$loaderVersion-$gameVersion", versionId))
     }
 
     private fun installProfile(
