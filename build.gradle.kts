@@ -47,9 +47,10 @@ tasks.withType<KotlinCompile> {
     )
 }
 
+val displayVersion = extra["displayVersion"]
 val appName = when {
-    Os.isFamily(Os.FAMILY_WINDOWS) -> "MCC Launcher"
-    else -> "mcclauncher"
+    Os.isFamily(Os.FAMILY_WINDOWS) -> "MCC Launcher u${displayVersion}"
+    else -> "mcclauncher-u${displayVersion}"
 }
 
 compose.desktop {
@@ -134,7 +135,7 @@ tasks {
         dependsOn(downloadAppImageBuilder)
         dependsOn(copyBuildToPackaging)
         environment("ARCH", "x86_64")
-        commandLine(appImageTool, linuxAppDir, "releases/$appName-${project.version}.AppImage")
+        commandLine(appImageTool, linuxAppDir, "releases/$appName.AppImage")
     }
 
     val exeRelease by registering(Copy::class) {
@@ -169,6 +170,7 @@ tasks {
         rename("Config.kt.template", "Config.kt")
         filter {
             it.replace("{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}", profileLocation)
+                .replace("{{LAUNCHY_VERSION}}", displayVersion.toString())
         }
     }
     named("compileKotlin") {

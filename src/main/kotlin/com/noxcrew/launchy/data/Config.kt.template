@@ -20,10 +20,12 @@ data class Config(
     val seenGroups: Set<GroupName> = setOf(),
     val installed: Set<ModName> = setOf(),
     val installedFabricVersion: String? = null,
-    val installedMinecraftVersion: String? = "1.21.4",
+    val installedMinecraftVersion: String? = null,
+    val installedVersion: String? = null,
     val handledImportOptions: Boolean = false,
     val handledFirstLaunch: Boolean = false,
-    val profileUrl: String = "{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}"
+    val profileUrl: String = "{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}",
+    val launchyVersion: String = "{{LAUNCHY_VERSION}}"
 ) {
     fun save() {
         Dirs.configFile.writeText(Formats.yaml.encodeToString(this))

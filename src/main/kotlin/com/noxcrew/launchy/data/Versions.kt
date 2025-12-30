@@ -19,6 +19,9 @@ data class Versions(
     val servers: Set<Server> = emptySet(),
     val fabricVersion: String = "",
     val minecraftVersion: String = "",
+    val prefix: String? = null,
+    val id: String? = null,
+    val version: String? = null,
     val valid: Boolean = true,
 ) {
     val nameToGroup: Map<GroupName, Group> = groups.associateBy { it.name }
@@ -28,6 +31,12 @@ data class Versions(
     val nameToMod: Map<ModName, Mod> = modGroups.values
         .flatten()
         .associateBy { it.name }
+
+    fun getVersionId(configVersion: String): String = if (prefix != null && version != null) {
+        String.format("%s-%s-%s.%s", prefix, id ?: "latest", configVersion, version)
+    } else {
+        String.format("fabric-loader-%s-%s", fabricVersion, minecraftVersion)
+    }
 
     companion object {
         /** If true, local configs are used for testing. */

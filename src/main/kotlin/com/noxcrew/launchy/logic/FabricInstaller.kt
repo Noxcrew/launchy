@@ -37,11 +37,10 @@ object FabricInstaller {
         instanceDir: Path,
         profileName: String,
         gameVersion: String,
-        loaderName: String,
         loaderVersion: String,
+        versionId: String,
     ): Boolean {
-        val versionId = String.format("%s-%s-%s", loaderName, loaderVersion, gameVersion)
-        installVersion(vanillaGameDir, gameVersion, loaderName, loaderVersion)
+        installVersion(vanillaGameDir, gameVersion, loaderVersion, versionId)
         installProfile(vanillaGameDir, instanceDir, profileName, versionId)
         return true
     }
@@ -72,11 +71,10 @@ object FabricInstaller {
     fun installVersion(
         mcDir: Path,
         gameVersion: String,
-        loaderName: String,
         loaderVersion: String,
+        versionId: String,
     ) {
-        println("Installing $gameVersion with fabric $loaderVersion")
-        val versionId = "$loaderName-$loaderVersion-$gameVersion"
+        println("Installing $gameVersion with fabric $loaderVersion under $versionId")
         val versionsDir = mcDir.resolve("versions")
         val profileDir = versionsDir.resolve(versionId)
         val profileJsonPath = profileDir.resolve("$versionId.json")

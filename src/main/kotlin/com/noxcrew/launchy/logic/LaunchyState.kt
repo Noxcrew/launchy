@@ -18,6 +18,8 @@ import com.noxcrew.launchy.data.unzip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import net.kyori.adventure.nbt.BinaryTagIO
 import net.kyori.adventure.nbt.ByteBinaryTag
 import net.kyori.adventure.nbt.CompoundBinaryTag
@@ -39,6 +41,8 @@ class LaunchyState(
     initialProfile: Versions,
     initialErrorMessage: String,
 ) {
+    val editMutex = Mutex()
+
     var profile by mutableStateOf(initialProfile)
     var profileUrl by mutableStateOf(config.profileUrl)
 
@@ -64,6 +68,7 @@ class LaunchyState(
 
     var installedFabricVersion by mutableStateOf(config.installedFabricVersion)
     var installedMinecraftVersion by mutableStateOf(config.installedMinecraftVersion)
+    var installedVersion by mutableStateOf(config.installedVersion)
     var installedMods by mutableStateOf(config.installed)
 
     init {
@@ -124,11 +129,14 @@ class LaunchyState(
                 installedMinecraftVersion == profile.minecraftVersion &&
                 installedFabricVersion == profile.fabricVersion
     }
+    val profileUpToDate by derivedStateOf {
+        installedVersion == profile.getVersionId(config.launchyVersion)
+    }
 
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
     val installsQueued by derivedStateOf { queuedInstalls.isNotEmpty() }
     val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
-    val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate }
+    val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate || !profileUpToDate }
 
     var errorMessage by mutableStateOf(initialErrorMessage)
     var importingProfile by mutableStateOf(false)
@@ -170,7 +178,7 @@ class LaunchyState(
     }
 
     suspend fun update() = coroutineScope {
-        if (!fabricUpToDate)
+        if (!profileUpToDate || !fabricUpToDate)
             installFabric()
         updateServers()
         for (mod in queuedDownloads) {
@@ -184,15 +192,16 @@ class LaunchyState(
                     println("Starting deletion of $mod")
                     val file = Dirs.mods / "${mod}.jar"
                     file.deleteIfExists()
-                    downloadedMods = downloadedMods.filter { it.name != mod }
-                    installedMods = installedMods.minus(mod)
+                    editMutex.withLock {
+                        downloadedMods = downloadedMods.filter { it.name != mod }
+                        installedMods = installedMods.minus(mod)
+                    }
                     println("Successfully deleted $mod")
                 } catch (e: FileSystemException) {
-                    return@launch
+                    // Ignore file system exceptions
                 }
             }
         }
-        save()
     }
 
     fun updateServers() {
@@ -246,13 +255,14 @@ class LaunchyState(
 
     @OptIn(ExperimentalPathApi::class)
     fun installFabric() {
+        val versionId = profile.getVersionId(config.launchyVersion)
         FabricInstaller.installToLauncher(
             Dirs.minecraft,
             Dirs.mcclaunchy,
             "MC Championship",
             profile.minecraftVersion,
-            "fabric-loader",
             profile.fabricVersion,
+            versionId,
         )
         println("Finished installing profile")
         profileCreated = true
@@ -260,6 +270,8 @@ class LaunchyState(
         installedFabricVersion = profile.fabricVersion
         installedMinecraftVersion = "Installing..."
         installedMinecraftVersion = profile.minecraftVersion
+        installedVersion = "Installing..."
+        installedVersion = versionId
 
         // Move all mods into a separate folder so the user does not
         // get confused when a mod for an older version stops working
@@ -291,10 +303,12 @@ class LaunchyState(
                     Downloader.download(url = mod.url, writeTo = mod.file) progress@{
                         downloading[mod] = it
                     }
-                    downloadURLs[mod] = mod.url
-                    installedMods = installedMods.plus(mod.name)
-                    if (mod.isDownloaded) {
-                        downloadedMods += mod
+                    editMutex.withLock {
+                        downloadURLs[mod] = mod.url
+                        installedMods = installedMods.plus(mod.name)
+                        if (mod.isDownloaded) {
+                            downloadedMods += mod
+                        }
                     }
                     println("Successfully downloaded ${mod.name}")
                 } catch (ex: CancellationException) {
@@ -302,10 +316,14 @@ class LaunchyState(
                 } catch (e: Exception) {
                     println("Failed to download ${mod.name}")
                     e.printStackTrace()
-                    failedDownloads += mod
+                    editMutex.withLock {
+                        failedDownloads += mod
+                    }
                 } finally {
                     println("Finished download of ${mod.name}")
-                    downloading -= mod
+                    editMutex.withLock {
+                        downloading -= mod
+                    }
                 }
             }
 
@@ -316,7 +334,9 @@ class LaunchyState(
                     Downloader.download(url = mod.configUrl, writeTo = mod.config) progress@{
                         downloadingConfigs[mod] = it
                     }
-                    downloadConfigURLs[mod] = mod.configUrl
+                    editMutex.withLock {
+                        downloadConfigURLs[mod] = mod.configUrl
+                    }
                     unzip(mod.config.toFile(), Dirs.mcclaunchy.toString())
                     mod.config.toFile().delete()
                     println("Successfully downloaded ${mod.name} config")
@@ -324,11 +344,15 @@ class LaunchyState(
                     throw ex // Must let the CancellationException propagate
                 } catch (e: Exception) {
                     println("Failed to download ${mod.name} config")
-                    failedDownloads += mod
+                    editMutex.withLock {
+                        failedDownloads += mod
+                    }
                     e.printStackTrace()
                 } finally {
                     println("Finished download of ${mod.name} config")
-                    downloadingConfigs -= mod
+                    editMutex.withLock {
+                        downloadingConfigs -= mod
+                    }
                 }
             }
         }.onFailure {
@@ -392,6 +416,7 @@ class LaunchyState(
             installed = installedMods.toSet(),
             installedFabricVersion = installedFabricVersion,
             installedMinecraftVersion = installedMinecraftVersion,
+            installedVersion = installedVersion,
             handledImportOptions = handledImportOptions,
             handledFirstLaunch = handledFirstLaunch,
             profileUrl = profileUrl,
