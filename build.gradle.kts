@@ -50,7 +50,7 @@ tasks.withType<KotlinCompile> {
 val displayVersion = extra["displayVersion"]
 val appName = when {
     Os.isFamily(Os.FAMILY_WINDOWS) -> "MCC Launcher u${displayVersion}"
-    else -> "mcclauncher-u${displayVersion}"
+    else -> "mcclauncher"
 }
 
 compose.desktop {
@@ -135,7 +135,7 @@ tasks {
         dependsOn(downloadAppImageBuilder)
         dependsOn(copyBuildToPackaging)
         environment("ARCH", "x86_64")
-        commandLine(appImageTool, linuxAppDir, "releases/$appName.AppImage")
+        commandLine(appImageTool, linuxAppDir, "releases/$appName-u${displayVersion}.AppImage")
     }
 
     val exeRelease by registering(Copy::class) {
