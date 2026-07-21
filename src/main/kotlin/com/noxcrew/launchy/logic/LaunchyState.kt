@@ -6,14 +6,11 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.noxcrew.launchy.data.Config
-import com.noxcrew.launchy.data.ConfigURL
 import com.noxcrew.launchy.data.Dirs
-import com.noxcrew.launchy.data.DownloadURL
-import com.noxcrew.launchy.data.Group
-import com.noxcrew.launchy.data.GroupName
 import com.noxcrew.launchy.data.Mod
 import com.noxcrew.launchy.data.ModName
 import com.noxcrew.launchy.data.Profile
+import com.noxcrew.launchy.data.ProfileConfig
 import com.noxcrew.launchy.data.unzip
 import com.noxcrew.launchy.ui.screens.Screen
 import com.noxcrew.launchy.ui.screens.openScreen
@@ -45,162 +42,176 @@ class LaunchyState(
 ) {
     val editMutex = Mutex()
 
-    var profile by mutableStateOf(initialProfiles[config.profileUrl]!!)
-    var profileUrl by mutableStateOf(config.profileUrl)
-    var allProfiles by mutableStateOf(initialProfiles)
-    var allProfileUrls by mutableStateOf(config.savedProfiles)
+    var allProfilesByUrl: Map<String, Profile> by mutableStateOf(initialProfiles)
+    var profileConfigs by mutableStateOf(buildMap {
+        config.profiles.forEach { (key, value) ->
+            val profile = allProfilesByUrl[value.profileUrl]!!
+            put(key, value.copy(_profile = profile, instanceId = profile.instanceId))
+        }
+        initialProfiles
+            .filter { it.value.instanceId !in this }
+            .forEach { (url, profile) ->
+                put(profile.instanceId, ProfileConfig(profile, profile.instanceId, url))
+            }
+        initialProfiles[config.mainProfile]?.takeUnless { it.instanceId in this }?.also {
+            put(it.instanceId, ProfileConfig(it, it.instanceId, config.mainProfile))
+        }
+    })
 
-    var enabledMods: Set<Mod> by mutableStateOf(emptySet())
-    val disabledMods: Set<Mod> by derivedStateOf { profile.nameToMod.values.toSet() - enabledMods }
-    var downloadedMods: Iterable<Mod> by mutableStateOf(profile.nameToMod.values.filter { it.isDownloaded })
+    var mainProfileUrl by mutableStateOf(config.mainProfile)
+    var mainProfile by mutableStateOf(initialProfiles[mainProfileUrl]!!)
+    var mainProfileConfig by mutableStateOf(profileConfigs[mainProfile.instanceId]!!)
 
-    val downloadURLs = mutableStateMapOf<Mod, DownloadURL>().apply {
-        putAll(
-            config.downloads
-                .mapNotNull { it.key.toMod()?.to(it.value) }
-                .toMap()
-        )
-    }
+    val enabledMods: Set<Mod> by derivedStateOf { mainProfileConfig.enabledMods }
+    val downloadedMods: List<Mod> by derivedStateOf { mainProfileConfig.downloadedMods }
 
-    val downloadConfigURLs = mutableStateMapOf<Mod, ConfigURL>().apply {
-        putAll(
-            config.configs
-                .mapNotNull { it.key.toMod()?.to(it.value) }
-                .toMap()
-        )
-    }
-
-    var installedFabricVersion by mutableStateOf(config.installedFabricVersion)
-    var installedMinecraftVersion by mutableStateOf(config.installedMinecraftVersion)
-    var installedVersion by mutableStateOf(config.installedVersion)
-    var installedMods by mutableStateOf(config.installed)
-
-    init {
-        updateEnabled()
-    }
-
-    val upToDateMods by derivedStateOf {
-        enabledMods.filter { it in downloadedMods && it in downloadURLs && downloadURLs[it] == it.url }
-    }
-
-    val upToDateConfigs by derivedStateOf {
-        enabledMods.filter { it in downloadConfigURLs && downloadConfigURLs[it] == it.configUrl }
-    }
-
-    val enabledModsWithConfig by derivedStateOf {
-        enabledMods.filter { it.configUrl != "" }
-    }
-
-    val queuedDownloads by derivedStateOf { (enabledMods - upToDateMods.toSet()) + (enabledModsWithConfig - upToDateConfigs.toSet()) }
+    val queuedDownloads by derivedStateOf { mainProfileConfig.queuedDownloads }
     val queuedUpdates by derivedStateOf { queuedDownloads.filter { it in downloadedMods }.toSet() }
     val queuedInstalls by derivedStateOf { queuedDownloads - queuedUpdates }
-    val queuedDeletions: List<ModName> by derivedStateOf {
-        disabledMods.filter { it in downloadedMods }.map { it.name } +
-                (installedMods - profile.nameToMod.keys.toSet())
-    }
+    val queuedDeletions: List<ModName> by derivedStateOf { mainProfileConfig.queuedDeletions }
 
-    var enabledConfigs: Set<Mod> by mutableStateOf(config.toggledConfigs.mapNotNull { it.toMod() }.toSet())
-
-    init {
-        // trigger update incase we have dependencies
-        enabledMods.forEach { setModEnabled(it, true, save = false) }
-    }
-
-    var updating by mutableStateOf(false)
+    var updating by mutableStateOf<String?>(null)
     val downloading = mutableStateMapOf<Mod, Progress>()
     val downloadingConfigs = mutableStateMapOf<Mod, Progress>()
     val isDownloading by derivedStateOf { downloading.isNotEmpty() || downloadingConfigs.isNotEmpty() }
     var failedDownloads by mutableStateOf(emptySet<Mod>())
 
-    // Caclculate the speed of the download
-    val downloadSpeed by derivedStateOf {
-        val total = downloading.values.sumOf { it.bytesDownloaded }
-        val time = downloading.values.sumOf { it.timeElapsed }
-        if (time == 0L) 0 else total / time
-    }
-
     fun isDownloading(mod: Mod) = downloading[mod] != null || downloadingConfigs[mod] != null
 
     val minecraftValid = (Dirs.minecraft / "launcher_profiles.json").exists()
-    var profileCreated by mutableStateOf(
-        minecraftValid && FabricInstaller.isProfileInstalled(
-            Dirs.minecraft,
-            "MC Championship"
-        ) && PrismInstaller.isProfileInstalled(profile)
-    )
+    val profilesCreated by derivedStateOf {
+        profileConfigs.values.filter {
+            minecraftValid &&
+                    FabricInstaller.isProfileInstalled(Dirs.minecraft, it.instanceId) &&
+                    PrismInstaller.isProfileInstalled(it.profile)
+        }.map { it.instanceId }
+    }
     val fabricUpToDate by derivedStateOf {
-        profileCreated &&
-                installedMinecraftVersion == profile.minecraftVersion &&
-                installedFabricVersion == profile.fabricVersion
+        profileConfigs.values.filter { it.profile.instanceId in profilesCreated && it.isUpToDate }.map { it.instanceId }
     }
     val profileUpToDate by derivedStateOf {
-        installedVersion == profile.getVersionId(config.launchyVersion)
+        profileConfigs.values.filter {
+            it.installedVersion == it.profile.getVersionId()
+        }.map { it.instanceId }
     }
 
     val updatesQueued by derivedStateOf { queuedUpdates.isNotEmpty() }
     val installsQueued by derivedStateOf { queuedInstalls.isNotEmpty() }
     val deletionsQueued by derivedStateOf { queuedDeletions.isNotEmpty() }
-    val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate || !profileUpToDate }
+    val operationsQueued by derivedStateOf {
+        profileConfigs.values.filter {
+            it.queuedUpdates.isNotEmpty() || it.queuedInstalls.isNotEmpty() || it.queuedDeletions.isNotEmpty() || it.instanceId !in fabricUpToDate || it.instanceId !in profileUpToDate
+        }.map { it.instanceId }
+    }
 
     var errorMessage by mutableStateOf(initialErrorMessage)
     var initialProfileDialog by mutableStateOf(false)
     var startingLauncher by mutableStateOf(false)
 
-    val hasProfiles by derivedStateOf { allProfileUrls.isNotEmpty() }
-
-    // If any state is true, we consider import handled and move on
-    var handledImportOptions by mutableStateOf(
-        config.handledImportOptions ||
-                (Dirs.mcclaunchy / "options.txt").exists() ||
-                !minecraftValid
-    )
+    val hasProfiles by derivedStateOf { allProfilesByUrl.size > 1 }
 
     var handledFirstLaunch by mutableStateOf(config.handledFirstLaunch)
 
-    fun setModEnabled(mod: Mod, enabled: Boolean, save: Boolean = true) {
+    var currentEnabledCache: MutableSet<Mod>? = null
+
+    fun verify() {
+        val save = currentEnabledCache == null
+        if (currentEnabledCache == null) {
+            currentEnabledCache = enabledMods.toMutableSet()
+        }
+        enabledMods.forEach { setModEnabled(it, true) }
+        if (save) {
+            mainProfileConfig = mainProfileConfig.copy(
+                fullEnabledGroups = mainProfile.modGroups
+                    .filter { currentEnabledCache!!.containsAll(it.value) }.keys
+                    .map { it.name }.toSet(),
+                toggledMods = currentEnabledCache!!.mapTo(mutableSetOf()) { it.name },
+            )
+            currentEnabledCache = null
+            profileConfigs = profileConfigs.plus(mainProfile.instanceId to mainProfileConfig)
+            save()
+        }
+    }
+
+    fun setModEnabled(mod: Mod, enabled: Boolean) {
+        val save = currentEnabledCache == null
+        if (save) {
+            currentEnabledCache = enabledMods.toMutableSet()
+        }
+
         if (enabled) {
-            enabledMods += mod
-            enabledMods.filter { it.name in mod.incompatibleWith || it.incompatibleWith.contains(mod.name) }
-                .forEach { setModEnabled(it, false, save = false) }
-            disabledMods.filter { it.name in mod.requires }.forEach { setModEnabled(it, true, save = false) }
+            currentEnabledCache!!.add(mod)
+            currentEnabledCache!!.filter { it.name in mod.incompatibleWith || it.incompatibleWith.contains(mod.name) }
+                .forEach { setModEnabled(it, false) }
+            mainProfileConfig.disabledMods(currentEnabledCache!!).filter { it.name in mod.requires }
+                .forEach { setModEnabled(it, true) }
         } else {
-            enabledMods -= mod
+            currentEnabledCache!!.remove(mod)
             // if a mod is disabled, disable all mods that depend on it
-            enabledMods.filter { it.requires.contains(mod.name) }.forEach { setModEnabled(it, false, save = false) }
+            currentEnabledCache!!.filter { it.requires.contains(mod.name) }
+                .forEach { setModEnabled(it, false) }
+
             // if a mod is disabled, and the dependency is only used by this mod, disable the dependency too, unless it's not marked as a dependency
-            enabledMods.filter { dep ->
+            currentEnabledCache!!.filter { dep ->
                 mod.requires.contains(dep.name)  // if the mod depends on this dependency
                         && dep.dependency // if the dependency is marked as a dependency
-                        && enabledMods.none { it.requires.contains(dep.name) }  // and no other mod depends on this dependency
-                        && !profile.modGroups.filterValues { it.contains(dep) }.keys.any { it.forceEnabled } // and the group the dependency is in is not force enabled
-            }.forEach { setModEnabled(it, false, save = false) }
+                        && currentEnabledCache!!.none { it.requires.contains(dep.name) }  // and no other mod depends on this dependency
+                        && !mainProfile.modGroups.filterValues { it.contains(dep) }.keys.any { it.forceEnabled } // and the group the dependency is in is not force enabled
+            }.forEach { setModEnabled(it, false) }
         }
-        setModConfigEnabled(mod, enabled)
-        if (save) save()
+
+        if (save) {
+            mainProfileConfig = mainProfileConfig.copy(
+                fullEnabledGroups = mainProfile.modGroups
+                    .filter { currentEnabledCache!!.containsAll(it.value) }.keys
+                    .map { it.name }.toSet(),
+                toggledMods = currentEnabledCache!!.mapTo(mutableSetOf()) { it.name },
+            )
+            currentEnabledCache = null
+            profileConfigs = profileConfigs.plus(mainProfile.instanceId to mainProfileConfig)
+            save()
+        }
     }
 
-    fun setModConfigEnabled(mod: Mod, enabled: Boolean) {
-        enabledConfigs = if (mod.configUrl.isNotBlank() && enabled) enabledConfigs.plus(mod) else enabledConfigs.minus(mod)
-    }
+    suspend fun update(profile: Profile) = coroutineScope {
+        val config = profileConfigs[profile.instanceId]!!
+        val profileCreated = minecraftValid &&
+                FabricInstaller.isProfileInstalled(Dirs.minecraft, profile.instanceId) &&
+                PrismInstaller.isProfileInstalled(profile)
+        val fabricUpToDate = profileCreated && config.isUpToDate
+        val profileUpToDate = config.installedVersion == profile.getVersionId()
 
-    suspend fun update() = coroutineScope {
+        // If the profile or fabric is out of date, update that!
         if (!profileUpToDate || !fabricUpToDate)
-            installFabric()
-        updateServers()
-        for (mod in queuedDownloads) {
+            installFabric(profile)
+
+        // Update the server list
+        updateServers(profile)
+
+        // Clear failed downloads before we start
+        failedDownloads = emptySet()
+
+        // Start any queued downloads
+        for (mod in config.queuedDownloads) {
             launch(Dispatchers.IO) {
-                download(mod)
+                download(profile, mod)
             }
         }
-        for (mod in queuedDeletions) {
+        for (mod in config.queuedDeletions) {
             launch(Dispatchers.IO) {
                 try {
                     println("Starting deletion of $mod")
-                    val file = Dirs.mods / "${mod}.jar"
+                    val file = Dirs.launchyInstances / profile.instanceId / "mods/${mod}.jar"
                     file.deleteIfExists()
                     editMutex.withLock {
-                        downloadedMods = downloadedMods.filter { it.name != mod }
-                        installedMods = installedMods.minus(mod)
+                        profileConfigs = profileConfigs.plus(
+                            profile.instanceId to
+                                    (profileConfigs[profile.instanceId] ?: return@withLock).let { config ->
+                                        config.copy(
+                                            downloads = config.downloads.filter { it.key != mod },
+                                            installed = config.installed.minus(mod)
+                                        )
+                                    })
                     }
                     println("Successfully deleted $mod")
                 } catch (e: FileSystemException) {
@@ -210,8 +221,10 @@ class LaunchyState(
         }
     }
 
-    fun updateServers() {
-        val serverFile = Dirs.mcclaunchy / "servers.dat"
+    fun updateServers(profile: Profile) {
+        val newConfig = profileConfigs[profile.instanceId]!!
+        newConfig.instanceFolder.createDirectories()
+        val serverFile = newConfig.instanceFolder / "servers.dat"
         val file = if (serverFile.exists()) {
             BinaryTagIO.unlimitedReader().read(serverFile, BinaryTagIO.Compression.NONE)
         } else {
@@ -260,62 +273,78 @@ class LaunchyState(
     }
 
     @OptIn(ExperimentalPathApi::class)
-    fun installFabric() {
-        val versionId = profile.getVersionId(config.launchyVersion)
+    fun installFabric(profile: Profile) {
+        val versionId = profile.getVersionId()
+        val oldConfig = profileConfigs[profile.instanceId]!!
+        val newConfig = oldConfig.copy(
+            installedMinecraftVersion = profile.minecraftVersion,
+            installedFabricVersion = profile.fabricVersion,
+            installedVersion = versionId,
+            updateId = oldConfig.updateId + 1,
+        )
+
         FabricInstaller.installToLauncher(
             Dirs.minecraft,
-            Dirs.mcclaunchy,
-            "MC Championship",
+            newConfig.instanceFolder,
+            profile.instanceId,
+            profile.displayName,
             profile.minecraftVersion,
             profile.fabricVersion,
             versionId,
         )
-        PrismInstaller.installToLauncher(versionId, profile)
-        println("Finished installing profile")
-        profileCreated = true
-        installedFabricVersion = "Installing..."
-        installedFabricVersion = profile.fabricVersion
-        installedMinecraftVersion = "Installing..."
-        installedMinecraftVersion = profile.minecraftVersion
-        installedVersion = "Installing..."
-        installedVersion = versionId
+        PrismInstaller.installToLauncher(profile, versionId, newConfig.instanceFolder)
 
-        // Move all mods into a separate folder so the user does not
-        // get confused when a mod for an older version stops working
-        val intendedMods = profile.nameToMod.values.map { it.file }
-        Dirs.mods.walk().forEach { file ->
-            // Ignore directories
-            if (file.isDirectory()) return@forEach
+        if (oldConfig.installedMinecraftVersion != newConfig.installedMinecraftVersion) {
+            // Move all mods into a separate folder so the user does not
+            // get confused when a mod for an older version stops working
+            val instanceFolder = Dirs.launchyInstances / profile.instanceId
+            val intendedMods = profile.nameToMod.values.map { newConfig.getFile(it) }
+            val mods = instanceFolder.resolve("mods")
+            mods.takeIf { it.exists() }?.walk()?.forEach { file ->
+                // Ignore directories
+                if (file.isDirectory()) return@forEach
 
-            // We can ignore mods that we intended to have!
-            if (file in intendedMods) return@forEach
+                // We can ignore mods that we intended to have!
+                if (file in intendedMods) return@forEach
 
-            // Create the target folder
-            if (!Dirs.previousMods.exists()) {
-                Dirs.previousMods.createDirectories()
+                // Create the target folder
+                val previousMods = instanceFolder.resolve("previous-mods")
+                if (!previousMods.exists()) {
+                    previousMods.createDirectories()
+                }
+
+                // Copy the mod across to the previous mods folder
+                file.copyTo(previousMods.resolve(mods.relativize(file)), overwrite = true)
+                file.deleteIfExists()
             }
-
-            // Copy the mod across to the previous mods folder
-            file.copyTo(Dirs.previousMods.resolve(Dirs.mods.relativize(file)), overwrite = true)
-            file.deleteIfExists()
         }
+
+        println("Finished installing profile")
+
+        profileConfigs = profileConfigs.plus(profile.instanceId to newConfig)
+        save()
+        println("Finished saving profile")
     }
 
-    suspend fun download(mod: Mod) {
+    suspend fun download(profile: Profile, mod: Mod) {
+        val config = profileConfigs[profile.instanceId] ?: return
         runCatching {
-            if (mod !in upToDateMods) {
+            if (mod !in config.enabledMods.filter { it in config.downloadedMods && config.downloadUrls[it] == it.url }) {
                 try {
                     println("Starting download of ${mod.name}")
                     downloading[mod] = Progress(0, 0, 0) // set progress to 0
-                    Downloader.download(url = mod.url, writeTo = mod.file) progress@{
+                    Downloader.download(url = mod.url, writeTo = config.getFile(mod)) progress@{
                         downloading[mod] = it
                     }
                     editMutex.withLock {
-                        downloadURLs[mod] = mod.url
-                        installedMods = installedMods.plus(mod.name)
-                        if (mod.isDownloaded) {
-                            downloadedMods += mod
-                        }
+                        profileConfigs = profileConfigs.plus(
+                            profile.instanceId to
+                                    (profileConfigs[profile.instanceId] ?: return@withLock).let { config ->
+                                        config.copy(
+                                            downloads = config.downloads.plus(mod.name to mod.url),
+                                            installed = config.installed.plus(mod.name)
+                                        )
+                                    })
                     }
                     println("Successfully downloaded ${mod.name}")
                 } catch (ex: CancellationException) {
@@ -334,18 +363,25 @@ class LaunchyState(
                 }
             }
 
-            if (mod.configUrl.isNotBlank() && (mod in enabledConfigs) && mod !in upToDateConfigs) {
+            if (mod.configUrl.isNotBlank() && mod !in config.enabledMods.filter { config.downloadConfigUrls[it] == it.configUrl }) {
                 try {
                     println("Starting download of ${mod.name} config")
-                    downloadingConfigs[mod] = Progress(0, 0, 0) // set progress to 0
-                    Downloader.download(url = mod.configUrl, writeTo = mod.config) progress@{
+                    downloadingConfigs[mod] = Progress(0, -1, 0) // set progress to 0
+                    val modConfig = config.getConfig(mod)
+                    Downloader.download(url = mod.configUrl, writeTo = modConfig) progress@{
                         downloadingConfigs[mod] = it
                     }
                     editMutex.withLock {
-                        downloadConfigURLs[mod] = mod.configUrl
+                        profileConfigs = profileConfigs.plus(
+                            profile.instanceId to
+                                    (profileConfigs[profile.instanceId] ?: return@withLock).let { config ->
+                                        config.copy(
+                                            configs = config.configs.plus(mod.name to mod.configUrl)
+                                        )
+                                    })
                     }
-                    unzip(mod.config.toFile(), Dirs.mcclaunchy.toString())
-                    mod.config.toFile().delete()
+                    unzip(modConfig.toFile(), config.instanceFolder.toString())
+                    modConfig.toFile().delete()
                     println("Successfully downloaded ${mod.name} config")
                 } catch (ex: CancellationException) {
                     throw ex // Must let the CancellationException propagate
@@ -366,21 +402,8 @@ class LaunchyState(
             if (it !is CancellationException) {
                 it.printStackTrace()
             }
-//            Badge {
-//                Text("Failed to download ${mod.name}: ${it.localizedMessage}!"/*, "OK"*/)
-//            }
-//            scaffoldState.snackbarHostState.showSnackbar(
-//                "Failed to download ${mod.name}: ${it.localizedMessage}!", "OK"
-//            )
         }
     }
-
-    fun ModName.toMod(): Mod? = profile.nameToMod[this]
-    fun GroupName.toGroup(): Group? = profile.nameToGroup[this]
-
-    val Mod.file get() = Dirs.mods / "${name}.jar"
-    val Mod.config get() = Dirs.tmp / "${name}-config.zip"
-    val Mod.isDownloaded get() = file.exists()
 
     suspend fun addProfile(url: String) {
         // Try to download the new file
@@ -392,9 +415,9 @@ class LaunchyState(
             }
 
             // Add the profiles to the list
-            if (allProfileUrls.isEmpty()) allProfileUrls += profileUrl
-            allProfileUrls += profiles.keys
-            allProfiles = allProfiles + profiles
+            allProfilesByUrl = allProfilesByUrl + profiles
+            profileConfigs = profileConfigs + profiles.entries.filter { it.value.instanceId !in profileConfigs }
+                .associate { it.value.instanceId to ProfileConfig(it.value, it.value.instanceId, it.key) }
 
             // Change to this profile
             changeProfile(url)
@@ -409,51 +432,25 @@ class LaunchyState(
     }
 
     fun changeProfile(url: String) {
-        profileUrl = url
-        profile = allProfiles[url]!!
-        downloadedMods = profile.nameToMod.values.filter { it.isDownloaded }
-        updateEnabled()
+        mainProfileUrl = url
+        mainProfile = allProfilesByUrl[url]!!
+        mainProfileConfig = profileConfigs[mainProfile.instanceId]!!
         save()
     }
 
-    private fun updateEnabled() {
-        val defaultEnabled = profile.groups
-            .filter { it.enabledByDefault }
-            .map { it.name } - config.seenGroups
-        val fullEnabled = config.fullEnabledGroups
-        val forceEnabled = profile.groups.filter { it.forceEnabled }.map { it.name }
-        val forceDisabled = profile.groups.filter { it.forceDisabled }
-        val fullDisabled = config.fullDisabledGroups
-
-        val enabled = config.toggledMods.mapNotNull { it.toMod() }.toMutableSet()
-        enabled.addAll(
-            ((fullEnabled + defaultEnabled + forceEnabled).toSet())
-                .mapNotNull { it.toGroup() }
-                .mapNotNull { profile.modGroups[it] }.flatten()
-        )
-        enabled.removeAll((forceDisabled + fullDisabled).toSet().mapNotNull { profile.modGroups[it] }.flatten().toSet())
-        enabledMods = enabled
+    fun removeProfile(profile: Profile) {
+        val config = profileConfigs[profile.instanceId] ?: return
+        allProfilesByUrl = allProfilesByUrl.minus(config.profileUrl)
+        profileConfigs = profileConfigs.minus(profile.instanceId)
+        save()
     }
 
     fun save() {
         config.copy(
-            fullEnabledGroups = profile.modGroups
-                .filter { enabledMods.containsAll(it.value) }.keys
-                .map { it.name }.toSet(),
-            toggledMods = enabledMods.mapTo(mutableSetOf()) { it.name },
-            toggledConfigs = enabledConfigs.mapTo(mutableSetOf()) { it.name } + enabledMods.filter { it.forceConfigDownload }
-                .mapTo(mutableSetOf()) { it.name },
-            downloads = downloadURLs.mapKeys { it.key.name },
-            configs = downloadConfigURLs.mapKeys { it.key.name },
-            seenGroups = profile.groups.map { it.name }.toSet(),
-            installed = installedMods.toSet(),
-            installedFabricVersion = installedFabricVersion,
-            installedMinecraftVersion = installedMinecraftVersion,
-            installedVersion = installedVersion,
-            handledImportOptions = handledImportOptions,
             handledFirstLaunch = handledFirstLaunch,
-            savedProfiles = allProfileUrls,
-            profileUrl = profileUrl,
+            profiles = profileConfigs,
+            mainProfile = mainProfileUrl,
+            launchyVersion = Config.LAUNCHY_VERSION,
         ).save()
     }
 }

@@ -9,15 +9,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.data.Profile
-import com.noxcrew.launchy.ui.screens.main.buttons.InitialProfileButton
 import com.noxcrew.launchy.ui.screens.main.buttons.PlayButton
+import com.noxcrew.launchy.ui.screens.main.buttons.RemoveProfileButton
 import com.noxcrew.launchy.ui.screens.main.buttons.SwitchButton
 import com.noxcrew.launchy.ui.state.TopBar
 
@@ -30,7 +28,7 @@ fun ProfileBar(url: String, profile: Profile) {
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier.padding(0.dp, 10.dp),
         color = when {
-            state.profileUrl == url -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+            state.mainProfileUrl == url -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
             else -> MaterialTheme.colorScheme.surface
         }
     ) {
@@ -51,15 +49,19 @@ fun ProfileBar(url: String, profile: Profile) {
                     Spacer(Modifier.width(10.dp))
                 }
                 Text(
-                    profile.info?.name ?: "Unnamed Profile", Modifier.weight(1f),
+                    profile.displayName, Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.weight(1f))
-                if (url == state.profileUrl) {
-                    PlayButton(TopBar)
-                } else {
+                if (url != state.mainProfileUrl) {
                     SwitchButton(url)
+                    Spacer(Modifier.size(1.dp))
+                }
+                PlayButton(TopBar, profile)
+                if (url != state.mainProfileUrl) {
+                    Spacer(Modifier.size(1.dp))
+                    RemoveProfileButton(profile)
                 }
             }
             Spacer(Modifier.width(5.dp))

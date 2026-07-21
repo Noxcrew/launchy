@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ChangeCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -22,43 +23,50 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.data.Dirs
+import com.noxcrew.launchy.data.Profile
 import com.noxcrew.launchy.logic.FabricInstaller
-import com.noxcrew.launchy.logic.Installation
 import com.noxcrew.launchy.logic.MinecraftDetector
+import com.noxcrew.launchy.logic.PrismInstaller
 import com.noxcrew.launchy.ui.state.TopBarState
-import com.noxcrew.launchy.util.OS
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
-import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun PlayButton(
     topBar: TopBarState,
+    profile: Profile,
 ) {
     val state = LocalLaunchyState
     val coroutineScope = rememberCoroutineScope()
     Button(
-        enabled = !state.startingLauncher && state.minecraftValid && !state.updating,
+        enabled = !state.startingLauncher && state.minecraftValid && state.updating == null,
         onClick = {
-            if (!state.profile.valid) {
+            if (!profile.valid) {
                 state.errorMessage = """
                     An error occurred while loading version information. Please contact an administrator for assistance!
                 """.trimIndent()
                 return@Button
             }
 
-            if (!state.startingLauncher && state.minecraftValid && !state.updating) {
-                if (state.operationsQueued) {
+            if (!state.startingLauncher && state.minecraftValid && state.updating == null) {
+                if (profile.instanceId !in state.profilesCreated || profile.instanceId in state.operationsQueued) {
                     coroutineScope.launch {
                         try {
                             var i = 1
-                            while (state.operationsQueued) {
-                                println("Starting update #$i")
-                                state.updating = true
-                                state.update()
+                            while (state.profileConfigs[profile.instanceId]!!.let {
+                                    it.queuedUpdates.isNotEmpty() ||
+                                            it.queuedInstalls.isNotEmpty() ||
+                                            it.queuedDeletions.isNotEmpty() ||
+                                            !it.isUpToDate ||
+                                            !FabricInstaller.isProfileInstalled(Dirs.minecraft, it.profile.instanceId) ||
+                                            !PrismInstaller.isProfileInstalled(it.profile) ||
+                                            it.installedVersion != it.profile.getVersionId()
+                                }) {
+                                println("Started update #$i")
+                                state.updating = profile.instanceId
+                                state.update(profile)
                                 state.save()
-                                state.updating = false
+                                state.updating = null
                                 println("Finished update #$i")
                                 i++
                             }
@@ -74,7 +82,7 @@ fun PlayButton(
                 } else {
                     // Bump the profile to the top of the list
                     println("Bumping profile in launcher")
-                    FabricInstaller.bumpProfile(Dirs.minecraft, "MC Championship")
+                    FabricInstaller.bumpProfile(Dirs.minecraft, profile.instanceId)
 
                     // Minimize the launcher
                     state.startingLauncher = true
@@ -123,37 +131,39 @@ fun PlayButton(
         )
     ) {
         @Composable
-        fun AnimatedVisibilityScope.button(name: String, icon: ImageVector, contentDescription: String) {
+        fun AnimatedVisibilityScope.button(name: String, icon: ImageVector) {
             Row {
-                Icon(icon, contentDescription)
+                Icon(icon, name.replace(".", ""))
                 Spacer(Modifier.width(5.dp))
                 Text(name)
             }
         }
 
-
         AnimatedVisibility(!state.minecraftValid) {
-            button("Invalid Minecraft", Icons.Rounded.Close, "Invalid")
+            button("Invalid Minecraft", Icons.Rounded.Close)
         }
         AnimatedVisibility(state.minecraftValid) {
-            AnimatedVisibility(state.updating) {
-                AnimatedVisibility(!state.profileCreated) {
-                    button("Installing...", Icons.Rounded.Update, "Update")
+            AnimatedVisibility(state.updating == null) {
+                AnimatedVisibility(profile.instanceId !in state.profilesCreated) {
+                    button("Install", Icons.Rounded.Download)
                 }
-                AnimatedVisibility(state.profileCreated) {
-                    button("Updating...", Icons.Rounded.Update, "Update")
+                AnimatedVisibility(profile.instanceId in state.profilesCreated && profile.instanceId in state.operationsQueued) {
+                    button("Update", Icons.Rounded.Download)
+                }
+                AnimatedVisibility(profile.instanceId in state.profilesCreated && profile.instanceId !in state.operationsQueued) {
+                    button("Play", Icons.Rounded.PlayArrow)
                 }
             }
-            AnimatedVisibility(!state.updating) {
-                AnimatedVisibility(!state.profileCreated && state.operationsQueued) {
-                    button("Install", Icons.Rounded.Download, "Download")
+            AnimatedVisibility(state.updating == profile.instanceId) {
+                AnimatedVisibility(profile.instanceId !in state.profilesCreated) {
+                    button("Installing...", Icons.Rounded.Update)
                 }
-                AnimatedVisibility(state.profileCreated && state.operationsQueued) {
-                    button("Update", Icons.Rounded.Download, "Download")
+                AnimatedVisibility(profile.instanceId in state.profilesCreated) {
+                    button("Updating...", Icons.Rounded.Update)
                 }
-                AnimatedVisibility(!state.operationsQueued) {
-                    button("Play", Icons.Rounded.PlayArrow, "Play")
-                }
+            }
+            AnimatedVisibility(state.updating != null && state.updating != profile.instanceId) {
+                button("Waiting", Icons.Rounded.ChangeCircle)
             }
         }
     }

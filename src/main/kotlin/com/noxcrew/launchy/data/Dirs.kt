@@ -18,15 +18,13 @@ object Dirs {
         OS.LINUX -> home / ".mcclaunchy"
     }
 
+    val launchyInstances = mcclaunchy / "instances"
+
     val prism = when (OS.get()) {
         OS.WINDOWS -> Path(System.getenv("APPDATA")) / "PrismLauncher"
         OS.MAC -> home / "Library/Application Support/PrismLauncher"
         OS.LINUX -> home / ".local/share/PrismLauncher"
     }
-
-    val mods = mcclaunchy / "mods"
-    val previousMods = mcclaunchy / "previous-mods"
-    val tmp = mcclaunchy / ".tmp"
 
     val config = when (OS.get()) {
         OS.WINDOWS -> Path(System.getenv("APPDATA"))
@@ -41,8 +39,6 @@ object Dirs {
     fun createDirs() {
         config.createDirectories()
         mcclaunchy.createDirectories()
-        mods.createDirectories()
-        tmp.deleteRecursively()
-        tmp.createDirectories()
+        launchyInstances.createDirectories()
     }
 }

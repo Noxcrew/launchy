@@ -36,12 +36,13 @@ object FabricInstaller {
         vanillaGameDir: Path,
         instanceDir: Path,
         profileName: String,
+        displayName: String,
         gameVersion: String,
         loaderVersion: String,
         versionId: String,
     ): Boolean {
         installVersion(vanillaGameDir, gameVersion, loaderVersion, versionId)
-        installProfile(vanillaGameDir, instanceDir, profileName, versionId)
+        installProfile(vanillaGameDir, instanceDir, profileName, displayName, versionId)
         return true
     }
 
@@ -92,6 +93,7 @@ object FabricInstaller {
         mcDir: Path,
         instanceDir: Path,
         profileName: String,
+        displayName: String,
         versionId: String,
     ) {
         val launcherProfiles: Path = mcDir.resolve("launcher_profiles.json")
@@ -122,7 +124,7 @@ object FabricInstaller {
                 instanceDir,
                 versionId,
             )
-        profile.put("name", profileName)
+        profile.put("name", displayName)
         profile.put("lastUsed", Utils.ISO_8601.format(Date())) // Update timestamp to bring to top of profile list
         profile.put("lastVersionId", versionId)
         profiles.put(foundProfileName, profile)

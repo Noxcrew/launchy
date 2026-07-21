@@ -1,5 +1,6 @@
 package com.noxcrew.launchy.data
 
+import com.noxcrew.launchy.data.Config.Companion.LAUNCHY_VERSION
 import com.noxcrew.launchy.logic.Downloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,7 +22,7 @@ data class Profile(
     val fabricVersion: String = "",
     val minecraftVersion: String = "",
     val prefix: String? = null,
-    val id: String? = null,
+    private val id: String? = null,
     val version: String? = null,
     val valid: Boolean = true,
     val linked: List<String> = emptyList(),
@@ -29,14 +30,23 @@ data class Profile(
 ) {
     val nameToGroup: Map<GroupName, Group> = groups.associateBy { it.name }
 
+    val instanceId: String
+        get() = info?.name?.lowercase()?.replace(" ", "-") ?: "mc-championship"
+
+    val displayName: String
+        get() = info?.name ?: "MC Championship"
+
     @Transient
     val modGroups: Map<Group, Set<Mod>> = _modGroups.mapNotNull { nameToGroup[it.key]?.to(it.value) }.toMap()
     val nameToMod: Map<ModName, Mod> = modGroups.values
         .flatten()
         .associateBy { it.name }
 
-    fun getVersionId(configVersion: String): String = if (prefix != null && version != null) {
-        String.format("%s-%s-%s.%s", prefix, id ?: "latest", configVersion, version)
+    fun getMod(name: ModName): Mod? = nameToMod[name]
+    fun getGroup(group: GroupName): Group? = nameToGroup[group]
+
+    fun getVersionId(): String = if (prefix != null && version != null) {
+        String.format("%s-%s-%d.%s", prefix, id ?: "latest", LAUNCHY_VERSION, version)
     } else {
         String.format("fabric-loader-%s-%s", fabricVersion, minecraftVersion)
     }

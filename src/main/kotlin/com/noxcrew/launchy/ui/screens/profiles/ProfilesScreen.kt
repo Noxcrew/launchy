@@ -16,9 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.ui.screens.main.ErrorPopup
-import com.noxcrew.launchy.ui.screens.main.InitialProfileDialog
 import com.noxcrew.launchy.ui.screens.settings.InfoBar
-import com.noxcrew.launchy.ui.screens.settings.ModGroup
 
 @Composable
 @Preview
@@ -38,7 +36,7 @@ fun ProfilesScreen() {
                 ) {
                     val lazyListState = rememberLazyListState()
                     LazyColumn(Modifier.fillMaxSize().padding(end = 12.dp), lazyListState) {
-                        items(state.allProfiles.entries.toList().sortedBy { (url, profile) -> profile.info?.name ?: profile.id ?: url }) { (url, profile) ->
+                        items(state.allProfilesByUrl.entries.toList().sortedBy { (_, profile) -> profile.displayName }) { (url, profile) ->
                             ProfileBar(url, profile)
                         }
                     }

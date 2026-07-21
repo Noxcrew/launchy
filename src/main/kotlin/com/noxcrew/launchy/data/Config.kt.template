@@ -11,28 +11,19 @@ import kotlin.io.path.writeText
 @Serializable
 data class Config(
     val minecraftDir: String? = null,
-    val fullEnabledGroups: Set<GroupName> = setOf(),
-    val fullDisabledGroups: Set<GroupName> = setOf(),
-    val toggledMods: Set<ModName> = setOf(),
-    val toggledConfigs: Set<ModName> = setOf(),
-    val downloads: Map<ModName, DownloadURL> = mapOf(),
-    val configs: Map<ModName, ConfigURL> = mapOf(),
-    val seenGroups: Set<GroupName> = setOf(),
-    val installed: Set<ModName> = setOf(),
-    val installedFabricVersion: String? = null,
-    val installedMinecraftVersion: String? = null,
-    val installedVersion: String? = null,
     val handledImportOptions: Boolean = false,
     val handledFirstLaunch: Boolean = false,
-    val profileUrl: String = "{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}",
-    val savedProfiles: List<String> = emptyList(),
-    val launchyVersion: String = "{{LAUNCHY_VERSION}}"
+    val profiles: Map<String, ProfileConfig> = emptyMap(),
+    val mainProfile: String = "{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}",
+    val launchyVersion: Int = LAUNCHY_VERSION
 ) {
     fun save() {
         Dirs.configFile.writeText(Formats.yaml.encodeToString(this))
     }
 
     companion object {
+        const val LAUNCHY_VERSION: Int = {{LAUNCHY_VERSION}}
+
         fun read() = runCatching {
             Formats.yaml.decodeFromStream(serializer(), Dirs.configFile.inputStream())
         }.getOrDefault(Config())

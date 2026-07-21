@@ -50,7 +50,7 @@ fun MainScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().weight(1f),
                 ) {
-                    PlayButton(TopBar)
+                    PlayButton(TopBar, state.mainProfile)
                     Spacer(Modifier.width(10.dp))
                     SettingsButton()
                     if (state.hasProfiles) {
@@ -63,6 +63,5 @@ fun MainScreen() {
     }
 
     FirstLaunchDialog()
-    HandleImportSettings()
     if (state.errorMessage.isNotBlank()) ErrorPopup()
 }

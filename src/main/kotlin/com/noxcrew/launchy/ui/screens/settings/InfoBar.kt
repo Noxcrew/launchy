@@ -41,7 +41,7 @@ fun InfoBar(barOnly: Boolean = false) {
             modifier = Modifier.padding(6.dp),
         ) {
             if (!barOnly) {
-                PlayButton(TopBar)
+                PlayButton(TopBar, state.mainProfile)
                 Spacer(Modifier.width(10.dp))
 
                 ActionButton(
@@ -51,7 +51,7 @@ fun InfoBar(barOnly: Boolean = false) {
                 )
 
                 ActionButton(
-                    shown = !state.fabricUpToDate,
+                    shown = state.mainProfile.instanceId !in state.fabricUpToDate,
                     icon = Icons.Rounded.HistoryEdu,
                     desc = "Will install fabric",
                 )
@@ -92,6 +92,7 @@ fun InfoBar(barOnly: Boolean = false) {
             }
 
             if (state.failedDownloads.isNotEmpty()) {
+                Spacer(Modifier.width(5.dp))
                 // Show failed downloads
                 Text(
                     text = "Failed downloads: ${state.failedDownloads.size}",

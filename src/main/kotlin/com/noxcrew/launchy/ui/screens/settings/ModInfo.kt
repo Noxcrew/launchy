@@ -72,9 +72,6 @@ object Browser {
 fun ModInfo(group: Group, mod: Mod) {
     val state = LocalLaunchyState
     val modEnabled by derivedStateOf { mod in state.enabledMods }
-    val configEnabled by derivedStateOf { mod in state.enabledConfigs }
-    var configExpanded by remember { mutableStateOf(false) }
-    val configTabState by animateFloatAsState(targetValue = if (configExpanded) 180f else 0f)
 
     Surface(
         modifier = Modifier
@@ -93,10 +90,12 @@ fun ModInfo(group: Group, mod: Mod) {
                     ?: 0L)).toFloat()
             val total = ((state.downloading[mod]?.totalBytes ?: 0L) + (state.downloadingConfigs[mod]?.totalBytes
                 ?: 0L)).toFloat()
-            LinearProgressIndicator(
-                progress = downloaded / total,
-                color = MaterialTheme.colorScheme.primaryContainer
-            )
+            if (total > 0) {
+                LinearProgressIndicator(
+                    progress = downloaded / total,
+                    color = MaterialTheme.colorScheme.primaryContainer
+                )
+            }
         }
         Column(Modifier.padding(2.dp)) {
             Row(
@@ -113,7 +112,7 @@ fun ModInfo(group: Group, mod: Mod) {
                     val displayedName = if (mod.displayName.isEmpty()) mod.name else mod.displayName
                     Text(displayedName, style = MaterialTheme.typography.bodyLarge)
                     // build list of mods that are incompatible with this mod
-                    val incompatibleMods = state.profile.modGroups.flatMap { it.value }
+                    val incompatibleMods = state.mainProfile.modGroups.flatMap { it.value }
                         .filter { it.incompatibleWith.contains(mod.name) || mod.incompatibleWith.contains(it.name) }
                         .map { it.name }
                     if (mod.requires.isNotEmpty() || incompatibleMods.isNotEmpty()) {
@@ -159,26 +158,6 @@ fun ModInfo(group: Group, mod: Mod) {
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.alpha(0.5f)
                 )
-                if (mod.configUrl.isNotEmpty()) {
-                    TooltipArea(
-                        modifier = Modifier.alpha(0.5f),
-                        tooltip = {
-                            Text(
-                                text = "Config",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = "ConfigTab",
-                            modifier = Modifier
-                                .scale(0.75f)
-                                .rotate(configTabState)
-                                .clickable { configExpanded = !configExpanded }
-                        )
-                    }
-                }
                 if (mod.homepage.isNotEmpty()) {
                     TooltipArea(
                         modifier = Modifier.alpha(0.5f),
@@ -196,37 +175,6 @@ fun ModInfo(group: Group, mod: Mod) {
                             Icon(
                                 imageVector = Icons.Rounded.OpenInNew,
                                 contentDescription = "Homepage"
-                            )
-                        }
-                    }
-                }
-            }
-            AnimatedVisibility(configExpanded) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable {
-                        if (!mod.forceConfigDownload) state.setModConfigEnabled(mod, !configEnabled)
-                    }.fillMaxWidth()
-                ) {
-                    Spacer(Modifier.width(20.dp))
-                    Checkbox(
-                        checked = configEnabled || mod.forceConfigDownload,
-                        onCheckedChange = {
-                            if (!mod.forceConfigDownload) state.setModConfigEnabled(mod, !configEnabled)
-                        },
-                        enabled = !mod.forceConfigDownload,
-                    )
-                    Column {
-                        Text(
-                            "Download our recommended configuration",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        if (mod.configDesc.isNotEmpty()) {
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                mod.configDesc,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.alpha(0.5f)
                             )
                         }
                     }

@@ -41,7 +41,7 @@ fun ProfileInfo() {
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.width(5.dp))
-                state.profile.info?.icon?.also { icon ->
+                state.mainProfile.info?.icon?.also { icon ->
                     Image(
                         painter = rememberAsyncImagePainter(icon),
                         contentDescription = "Profile Icon",
@@ -50,7 +50,7 @@ fun ProfileInfo() {
                     Spacer(Modifier.width(5.dp))
                 }
                 Text(
-                    state.profile.info?.name ?: "Unnamed Profile",
+                    state.mainProfile.displayName,
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Spacer(Modifier.weight(1f))

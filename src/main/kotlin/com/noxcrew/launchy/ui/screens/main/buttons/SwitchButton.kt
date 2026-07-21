@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowCircleRight
@@ -38,7 +39,7 @@ import kotlin.time.Duration.Companion.seconds
 fun SwitchButton(profileId: String) {
     val state = LocalLaunchyState
     Button(
-        enabled = !state.updating,
+        enabled = state.updating == null,
         onClick = {
             state.changeProfile(profileId)
         },
