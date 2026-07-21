@@ -1,40 +1,34 @@
 package com.noxcrew.launchy.ui.screens.main.buttons
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Dataset
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.ImportContacts
-import androidx.compose.material.icons.rounded.Place
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.noxcrew.launchy.LocalLaunchyState
-import kotlinx.coroutines.launch
+import com.noxcrew.launchy.ui.screens.Screen
+import com.noxcrew.launchy.ui.screens.openScreen
 
 @Composable
-fun ProfileButton() {
-    val state = LocalLaunchyState
-    Button(
-        enabled = state.minecraftValid && !state.isDownloading,
-        onClick = {
-            state.importingProfile = true
+fun ProfileButton(switch: Boolean = false) {
+    if (switch) {
+        Button(onClick = { openScreen(Screen.Profiles) }, modifier = Modifier.height(28.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)) {
+            Icon(Icons.Rounded.Dataset, "Profiles", modifier = Modifier.size(13.dp))
+            Spacer(Modifier.width(5.dp))
+            Text("Switch Profiles", fontSize = 12.sp)
         }
-    ) {
-        Icon(Icons.Rounded.Dataset, "Change Profile")
-        Spacer(Modifier.width(5.dp))
-        Text("Change Profile")
+    } else {
+        Button(onClick = { openScreen(Screen.Profiles) }) {
+            Icon(Icons.Rounded.Dataset, "Profiles")
+            Spacer(Modifier.width(5.dp))
+            Text("Profiles")
+        }
     }
 }

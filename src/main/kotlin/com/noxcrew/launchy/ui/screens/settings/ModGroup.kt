@@ -2,6 +2,7 @@ package com.noxcrew.launchy.ui.screens.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,7 +12,6 @@ import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.ChangeCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltipBox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -25,6 +25,7 @@ import com.noxcrew.launchy.data.Group
 import com.noxcrew.launchy.data.Mod
 import com.noxcrew.launchy.util.Option
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ModGroup(group: Group, mods: Collection<Mod>) {
     var expanded by remember { mutableStateOf(group.startExpanded) }

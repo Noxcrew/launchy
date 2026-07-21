@@ -11,6 +11,7 @@ pluginManagement {
         val kotlinVersion: String by settings
         kotlin("jvm") version kotlinVersion
         kotlin("plugin.serialization") version kotlinVersion
+        kotlin("plugin.compose") version kotlinVersion
     }
 }
 

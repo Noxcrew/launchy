@@ -19,6 +19,7 @@ import androidx.compose.ui.window.WindowScope
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.data.Dirs
 import com.noxcrew.launchy.ui.screens.Screen
+import com.noxcrew.launchy.ui.screens.openScreen
 import com.noxcrew.launchy.ui.screens.screen
 import com.noxcrew.launchy.ui.state.windowScope
 import kotlin.io.path.copyTo
@@ -40,12 +41,12 @@ fun HandleImportSettings() {
                     // TODO: Show error message
                     e.printStackTrace()
                 }
-                screen = Screen.Settings
+                openScreen(Screen.Settings)
                 state.handledImportOptions = true
                 state.save()
             },
             onDecline = {
-                screen = Screen.Settings
+                openScreen(Screen.Settings)
                 state.handledImportOptions = true
                 state.save()
             }

@@ -1,4 +1,4 @@
-package com.noxcrew.launchy.ui.screens.settings
+package com.noxcrew.launchy.ui.screens.profiles
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.VerticalScrollbar
@@ -17,18 +17,17 @@ import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.ui.screens.main.ErrorPopup
 import com.noxcrew.launchy.ui.screens.main.InitialProfileDialog
+import com.noxcrew.launchy.ui.screens.settings.InfoBar
+import com.noxcrew.launchy.ui.screens.settings.ModGroup
 
 @Composable
 @Preview
-fun SettingsScreen() {
+fun ProfilesScreen() {
     val state = LocalLaunchyState
     Scaffold(
-        bottomBar = { InfoBar() },
+        bottomBar = { InfoBar(barOnly = true) },
     ) { paddingValues ->
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (state.hasProfiles) {
-                ProfileInfo()
-            }
             Surface(
                 shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp),
                 modifier = Modifier.padding(5.dp)
@@ -39,8 +38,8 @@ fun SettingsScreen() {
                 ) {
                     val lazyListState = rememberLazyListState()
                     LazyColumn(Modifier.fillMaxSize().padding(end = 12.dp), lazyListState) {
-                        items(state.profile.modGroups.toList()) { (group, mods) ->
-                            ModGroup(group, mods)
+                        items(state.allProfiles.entries.toList().sortedBy { (url, profile) -> profile.info?.name ?: profile.id ?: url }) { (url, profile) ->
+                            ProfileBar(url, profile)
                         }
                     }
                     VerticalScrollbar(
@@ -52,6 +51,5 @@ fun SettingsScreen() {
         }
     }
 
-    if (state.initialProfileDialog) InitialProfileDialog()
     if (state.errorMessage.isNotBlank()) ErrorPopup()
 }

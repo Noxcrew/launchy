@@ -13,8 +13,10 @@ import com.noxcrew.launchy.data.Group
 import com.noxcrew.launchy.data.GroupName
 import com.noxcrew.launchy.data.Mod
 import com.noxcrew.launchy.data.ModName
-import com.noxcrew.launchy.data.Versions
+import com.noxcrew.launchy.data.Profile
 import com.noxcrew.launchy.data.unzip
+import com.noxcrew.launchy.ui.screens.Screen
+import com.noxcrew.launchy.ui.screens.openScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -38,13 +40,15 @@ import kotlin.io.path.walk
 class LaunchyState(
     // Config should never be mutated unless it also updates UI state
     private val config: Config,
-    initialProfile: Versions,
+    initialProfiles: Map<String, Profile>,
     initialErrorMessage: String,
 ) {
     val editMutex = Mutex()
 
-    var profile by mutableStateOf(initialProfile)
+    var profile by mutableStateOf(initialProfiles[config.profileUrl]!!)
     var profileUrl by mutableStateOf(config.profileUrl)
+    var allProfiles by mutableStateOf(initialProfiles)
+    var allProfileUrls by mutableStateOf(config.savedProfiles)
 
     var enabledMods: Set<Mod> by mutableStateOf(emptySet())
     val disabledMods: Set<Mod> by derivedStateOf { profile.nameToMod.values.toSet() - enabledMods }
@@ -139,8 +143,10 @@ class LaunchyState(
     val operationsQueued by derivedStateOf { updatesQueued || installsQueued || deletionsQueued || !fabricUpToDate || !profileUpToDate }
 
     var errorMessage by mutableStateOf(initialErrorMessage)
-    var importingProfile by mutableStateOf(false)
+    var initialProfileDialog by mutableStateOf(false)
     var startingLauncher by mutableStateOf(false)
+
+    val hasProfiles by derivedStateOf { allProfileUrls.isNotEmpty() }
 
     // If any state is true, we consider import handled and move on
     var handledImportOptions by mutableStateOf(
@@ -375,9 +381,35 @@ class LaunchyState(
     val Mod.config get() = Dirs.tmp / "${name}-config.zip"
     val Mod.isDownloaded get() = file.exists()
 
-    fun changeProfile(url: String, versions: Versions) {
+    suspend fun addProfile(url: String) {
+        // Try to download the new file
+        try {
+            val (profiles, error) = Profile.readAll(listOf(url))
+            if (error.isNotBlank()) {
+                errorMessage = "The given URL does not contain a valid profile!"
+                return
+            }
+
+            // Add the profiles to the list
+            if (allProfileUrls.isEmpty()) allProfileUrls += profileUrl
+            allProfileUrls += profiles.keys
+            allProfiles = allProfiles + profiles
+
+            // Change to this profile
+            changeProfile(url)
+
+            // Switch to the profile screen immediately to show it
+            initialProfileDialog = false
+            openScreen(Screen.Profiles)
+        } catch (x: Throwable) {
+            x.printStackTrace()
+            errorMessage = "The given URL does not contain a valid profile!"
+        }
+    }
+
+    fun changeProfile(url: String) {
         profileUrl = url
-        profile = versions
+        profile = allProfiles[url]!!
         downloadedMods = profile.nameToMod.values.filter { it.isDownloaded }
         updateEnabled()
         save()
@@ -419,6 +451,7 @@ class LaunchyState(
             installedVersion = installedVersion,
             handledImportOptions = handledImportOptions,
             handledFirstLaunch = handledFirstLaunch,
+            savedProfiles = allProfileUrls,
             profileUrl = profileUrl,
         ).save()
     }

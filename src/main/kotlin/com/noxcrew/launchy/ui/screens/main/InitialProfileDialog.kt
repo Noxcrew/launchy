@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,26 +24,22 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowScope
 import com.noxcrew.launchy.LocalLaunchyState
-import com.noxcrew.launchy.data.Dirs
-import com.noxcrew.launchy.data.Versions
-import com.noxcrew.launchy.logic.LaunchyState
 import com.noxcrew.launchy.ui.state.windowScope
 import kotlinx.coroutines.launch
-import kotlin.io.path.div
 
 @Composable
-fun ImportProfileDialog() {
+fun InitialProfileDialog() {
     val state = LocalLaunchyState
     AnimatedVisibility(
-        state.importingProfile,
+        state.initialProfileDialog,
         enter = fadeIn(), exit = fadeOut(),
     ) {
-        ImportProfileDialog(windowScope)
+        InitialProfileDialog(windowScope)
     }
 }
 
 @Composable
-fun ImportProfileDialog(
+fun InitialProfileDialog(
     windowScope: WindowScope,
 ) {
     val state = LocalLaunchyState
@@ -61,7 +56,7 @@ fun ImportProfileDialog(
             modifier = Modifier.widthIn(280.dp, 560.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.padding(24.dp),
             ) {
                 Text(
                     text = "Import Profile",
@@ -69,14 +64,15 @@ fun ImportProfileDialog(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Edit the URL below to the link of the profile you wish to import. This link will be provided to you by an administrator if you need to use this feature.",
+                    text = "An administrator will provide you with a link to paste below to import a new profile if necessary.",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(24.dp))
-                var text by remember { mutableStateOf(TextFieldValue(state.profileUrl)) }
+                var text by remember { mutableStateOf(TextFieldValue("")) }
                 TextField(
                     text,
-                    { newText -> text = newText }
+                    { newText -> text = newText },
+                    Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(24.dp))
                 Row(
@@ -85,25 +81,15 @@ fun ImportProfileDialog(
                 ) {
                     TextButton(onClick = {
                         val newURL = text.text.trim()
-
+                        if (newURL.isEmpty()) return@TextButton
                         coroutineScope.launch {
-                            // Try to download the new file
-                            try {
-                                val targetFile = Dirs.tmp / "versions.yml"
-                                val newData = Versions.readLatest(newURL, targetFile, ignoreLocal = true)
-                                state.changeProfile(newURL, newData)
-                                state.importingProfile = false
-                            } catch (x: Throwable) {
-                                x.printStackTrace()
-                                state.errorMessage = "The given URL does not contain a valid profile!"
-                                return@launch
-                            }
+                            state.addProfile(newURL)
                         }
                     }) {
-                        Text("Update")
+                        Text("Import")
                     }
                     TextButton(onClick = {
-                        state.importingProfile = false
+                        state.initialProfileDialog = false
                     }) {
                         Text("Close")
                     }

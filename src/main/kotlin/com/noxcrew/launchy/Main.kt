@@ -21,19 +21,14 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.noxcrew.launchy.data.Config
 import com.noxcrew.launchy.data.Dirs
-import com.noxcrew.launchy.data.Versions
+import com.noxcrew.launchy.data.Profile
 import com.noxcrew.launchy.logic.LaunchyState
-import com.noxcrew.launchy.ui.rememberMIAColorScheme
+import com.noxcrew.launchy.ui.createColorScheme
 import com.noxcrew.launchy.ui.screens.Screens
 import com.noxcrew.launchy.ui.state.TopBarProvider
 import com.noxcrew.launchy.ui.state.TopBarState
-import com.noxcrew.launchy.util.OS
 import net.fabricmc.installer.util.Utils
 import java.io.InputStream
-import java.nio.file.Path
-import kotlin.io.path.div
-import kotlin.io.path.exists
-import kotlin.io.path.inputStream
 
 private val LaunchyStateProvider = compositionLocalOf<LaunchyState> { error("No local versions provided") }
 
@@ -46,17 +41,10 @@ fun main() {
     println("MCC Launchy")
     application {
         val windowState = rememberWindowState(placement = WindowPlacement.Floating)
-        var errorMessage = ""
         val launchyState by produceState<LaunchyState?>(null) {
             val config = Config.read()
-            val versions = try {
-                Versions.readLatest(config.profileUrl, Dirs.versionsFile)
-            } catch (x: Throwable) {
-                x.printStackTrace()
-                errorMessage = "An error occurred while loading version information. Please contact an administrator for assistance!"
-                Versions(valid = false)
-            }
-            value = LaunchyState(config, versions, errorMessage)
+            val (profiles, errorMessage) = Profile.readAll(config.savedProfiles + config.profileUrl)
+            value = LaunchyState(config, profiles, errorMessage)
         }
         val onClose: () -> Unit = {
             exitApplication()
@@ -71,7 +59,7 @@ fun main() {
         ) {
             val topBarState = remember { TopBarState(onClose, windowState, this) }
             val ready = launchyState != null
-            val scheme = rememberMIAColorScheme()
+            val scheme = createColorScheme()
             MaterialTheme(colorScheme = scheme) {
                 CompositionLocalProvider(TopBarProvider provides topBarState) {
                     Scaffold {

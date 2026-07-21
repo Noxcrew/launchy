@@ -13,12 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
+import com.noxcrew.launchy.ui.screens.main.buttons.InitialProfileButton
 import com.noxcrew.launchy.ui.screens.main.buttons.PlayButton
-import com.noxcrew.launchy.ui.screens.main.buttons.ProfileButton
 import com.noxcrew.launchy.ui.state.TopBar
 
 @Composable
-fun InfoBar(barOnly: Boolean = false, modifier: Modifier = Modifier) {
+fun InfoBar(barOnly: Boolean = false) {
     val state = LocalLaunchyState
     Surface(
         tonalElevation = 2.dp,
@@ -38,12 +38,10 @@ fun InfoBar(barOnly: Boolean = false, modifier: Modifier = Modifier) {
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(6.dp)
+            modifier = Modifier.padding(6.dp),
         ) {
             if (!barOnly) {
                 PlayButton(TopBar)
-                Spacer(Modifier.width(10.dp))
-                ProfileButton()
                 Spacer(Modifier.width(10.dp))
 
                 ActionButton(
@@ -101,16 +99,10 @@ fun InfoBar(barOnly: Boolean = false, modifier: Modifier = Modifier) {
                 )
             }
 
-//                var path by remember { mutableStateOf("") }
-//                Button(onClick = {
-//                    path = FileDialog(ComposeWindow()).apply {
-////                        setFilenameFilter { dir, name -> name.endsWith(".minecraft") }
-//                        isVisible = true
-//                    }.directory
-//                }) {
-//                    Text("File Picker")
-//                }
-//                Text(path)
+            if (!barOnly && !state.hasProfiles) {
+                Spacer(Modifier.weight(1f))
+                InitialProfileButton()
+            }
         }
     }
 }

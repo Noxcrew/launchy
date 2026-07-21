@@ -25,6 +25,7 @@ data class Config(
     val handledImportOptions: Boolean = false,
     val handledFirstLaunch: Boolean = false,
     val profileUrl: String = "{{LAUNCHY_DEFAULT_PROFILE_LOCATION}}",
+    val savedProfiles: List<String> = emptyList(),
     val launchyVersion: String = "{{LAUNCHY_VERSION}}"
 ) {
     fun save() {

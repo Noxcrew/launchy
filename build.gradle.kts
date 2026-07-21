@@ -1,13 +1,12 @@
 import de.undercouch.gradle.tasks.download.Download
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
-    id("org.jetbrains.compose") version "1.5.11"
+    kotlin("plugin.compose")
+    id("org.jetbrains.compose") version "1.11.1"
     id("de.undercouch.download") version "5.6.0"
 }
 
@@ -25,26 +24,20 @@ dependencies {
         exclude(group = "org.jetbrains.compose.material", module = "material")
     }
     @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-    implementation(compose.material3)
-    implementation(compose.material)
-    implementation(compose.materialIconsExtended)
+    implementation("org.jetbrains.compose.material3:material3:1.9.0")
+    implementation("org.jetbrains.compose.material:material:1.11.1")
+    implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+    implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.serialization.kaml)
-    implementation("io.ktor:ktor-client-core:1.6.8")
-    implementation("io.ktor:ktor-client-cio:1.6.8")
-
-    implementation("org.json:json:20210307")
+    implementation("io.ktor:ktor-client-core:3.5.1")
+    implementation("io.ktor:ktor-client-cio:3.5.1")
+    implementation("io.coil-kt.coil3:coil-compose:3.5.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.5.0")
+    implementation("org.json:json:20231013")
     implementation("net.fabricmc:fabric-installer:1.0.1")
     implementation("edu.stanford.ejalbert:BrowserLauncher2:1.3")
     implementation("net.kyori:adventure-nbt:4.18.0")
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.freeCompilerArgs = listOf(
-        "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-        "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-        "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
-    )
 }
 
 val displayVersion = extra["displayVersion"]
@@ -59,7 +52,6 @@ compose.desktop {
 
         buildTypes {
             release {
-                // Proguard doesn't work on J21
                 proguard.isEnabled = false
             }
         }
@@ -105,19 +97,22 @@ val composePackageDir = "$buildDir/compose/binaries/main/${
 }"
 
 // Add the generated sources folder to the inputs
-sourceSets["main"].withConvention(conventionType = KotlinSourceSet::class) {
-    kotlin.srcDir("$buildDir/generated/kotlin")
+kotlin {
+    sourceSets {
+        main {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/kotlin"))
+        }
+    }
 }
 
 tasks {
+    val chmodAppImageBuilder by registering(Exec::class) {
+        commandLine("chmod", "+x", appImageTool)
+    }
     val downloadAppImageBuilder by registering(Download::class) {
         src("https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage")
         dest(appImageTool)
-        doLast {
-            exec {
-                commandLine("chmod", "+x", "deps/appimagetool.AppImage")
-            }
-        }
+        finalizedBy(chmodAppImageBuilder)
     }
 
     val deleteOldAppDirFiles by registering(Delete::class) {
@@ -132,7 +127,7 @@ tasks {
     }
 
     val executeAppImageBuilder by registering(Exec::class) {
-        dependsOn(downloadAppImageBuilder)
+        dependsOn(chmodAppImageBuilder)
         dependsOn(copyBuildToPackaging)
         environment("ARCH", "x86_64")
         commandLine(appImageTool, linuxAppDir, "releases/$appName-u${displayVersion}.AppImage")

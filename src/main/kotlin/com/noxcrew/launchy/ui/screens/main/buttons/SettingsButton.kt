@@ -11,11 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.ui.screens.Screen
+import com.noxcrew.launchy.ui.screens.openScreen
 import com.noxcrew.launchy.ui.screens.screen
 
 @Composable
 fun SettingsButton() {
-    Button(onClick = { screen = Screen.Settings }) {
+    Button(onClick = { openScreen(Screen.Settings) }) {
         Icon(Icons.Rounded.Settings, contentDescription = "Settings")
         Spacer(Modifier.width(5.dp))
         Text("Settings")

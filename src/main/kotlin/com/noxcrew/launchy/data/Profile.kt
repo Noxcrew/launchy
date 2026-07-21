@@ -9,10 +9,11 @@ import kotlinx.serialization.Transient
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.createDirectories
 import kotlin.io.path.inputStream
 
 @Serializable
-data class Versions(
+data class Profile(
     val groups: Set<Group> = emptySet(),
     @SerialName("modGroups")
     private val _modGroups: Map<GroupName, Set<Mod>> = emptyMap(),
@@ -23,6 +24,8 @@ data class Versions(
     val id: String? = null,
     val version: String? = null,
     val valid: Boolean = true,
+    val linked: List<String> = emptyList(),
+    val info: ProfileInfo? = null,
 ) {
     val nameToGroup: Map<GroupName, Group> = groups.associateBy { it.name }
 
@@ -39,22 +42,31 @@ data class Versions(
     }
 
     companion object {
-        /** If true, local configs are used for testing. */
-        private const val DEBUGGING_LOCAL_CONFIGS: Boolean = false
-
-        suspend fun readLatest(url: String, target: Path, ignoreLocal: Boolean = !DEBUGGING_LOCAL_CONFIGS): Versions = withContext(Dispatchers.IO) {
-            // Check against an environment variable that no user should ever have
-            if (!ignoreLocal && System.getenv()["MCC_LAUNCHY_DEV"] == "13518961351") {
-                println("Reading from local versions")
-
-                // Load from the example profile for testing locally
-                val file = Path("example-profile.yml")
-                Formats.yaml.decodeFromStream(serializer(), file.inputStream())
-            } else {
-                println("Fetching latest versions from $url to ${target.absolutePathString()}")
-                Downloader.download(url, target)
-                Formats.yaml.decodeFromStream(serializer(), target.inputStream())
+        suspend fun readAll(urls: List<String>): Pair<Map<String, Profile>, String> {
+            var errorMessage = ""
+            val profiles = mutableMapOf<String, Profile>()
+            val attempted = mutableSetOf<String>()
+            suspend fun tryRead(url: String) {
+                if (!attempted.add(url)) return
+                val profile = try {
+                    Dirs.versionsFolder.createDirectories()
+                    read(url, Dirs.versionsFolder.resolve(url.substringAfterLast("/")))
+                } catch (x: Throwable) {
+                    x.printStackTrace()
+                    errorMessage = "An error occurred while loading version information. Please contact an administrator for assistance!"
+                    Profile(valid = false)
+                }
+                profiles[url] = profile
+                profile.linked.forEach { tryRead(it) }
             }
+            urls.forEach { tryRead(it) }
+            return profiles to errorMessage
+        }
+
+        suspend fun read(url: String, target: Path): Profile = withContext(Dispatchers.IO) {
+            println("Fetching profile from $url to ${target.absolutePathString()}")
+            Downloader.download(url, target)
+            Formats.yaml.decodeFromStream(serializer(), target.inputStream())
         }
     }
 }

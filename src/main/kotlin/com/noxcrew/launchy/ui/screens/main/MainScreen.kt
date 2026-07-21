@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.ui.screens.main.buttons.PlayButton
+import com.noxcrew.launchy.ui.screens.main.buttons.ProfileButton
 import com.noxcrew.launchy.ui.screens.main.buttons.SettingsButton
 import com.noxcrew.launchy.ui.screens.settings.InfoBar
 import com.noxcrew.launchy.ui.state.TopBar
@@ -52,6 +53,10 @@ fun MainScreen() {
                     PlayButton(TopBar)
                     Spacer(Modifier.width(10.dp))
                     SettingsButton()
+                    if (state.hasProfiles) {
+                        Spacer(Modifier.width(10.dp))
+                        ProfileButton()
+                    }
                 }
             }
         }

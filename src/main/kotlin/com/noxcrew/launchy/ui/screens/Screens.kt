@@ -14,15 +14,28 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.ui.AppTopBar
 import com.noxcrew.launchy.ui.screens.main.MainScreen
+import com.noxcrew.launchy.ui.screens.profiles.ProfilesScreen
 import com.noxcrew.launchy.ui.screens.settings.SettingsScreen
 import com.noxcrew.launchy.ui.state.TopBar
+import java.util.Stack
 
 sealed class Screen(val transparentTopBar: Boolean = false) {
     object Default : Screen(transparentTopBar = true)
     object Settings : Screen()
+    object Profiles : Screen()
 }
 
 var screen: Screen by mutableStateOf(Screen.Default)
+val previousScreens = Stack<Screen>()
+
+fun openScreen(newScreen: Screen) {
+    previousScreens += screen
+    screen = newScreen
+}
+
+fun popScreen() {
+    screen = previousScreens.pop() ?: Screen.Default
+}
 
 @Composable
 @Preview
@@ -35,13 +48,16 @@ fun Screens() {
         TransitionSlideUp(screen == Screen.Settings) {
             SettingsScreen()
         }
+        TransitionSlideUp(screen == Screen.Profiles) {
+            ProfilesScreen()
+        }
     }
 
     AppTopBar(
         TopBar,
         screen.transparentTopBar,
         showBackButton = screen != Screen.Default,
-        onBackButtonClicked = { screen = Screen.Default }
+        onBackButtonClicked = { popScreen() }
     )
 }
 
