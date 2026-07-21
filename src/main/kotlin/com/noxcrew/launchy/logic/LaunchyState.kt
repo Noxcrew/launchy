@@ -166,6 +166,7 @@ class LaunchyState(
                     .filter { currentEnabledCache!!.containsAll(it.value) }.keys
                     .map { it.name }.toSet(),
                 toggledMods = currentEnabledCache!!.mapTo(mutableSetOf()) { it.name },
+                seenGroups = mainProfile.groups.map { it.name }.toSet(),
             )
             currentEnabledCache = null
             profileConfigs = profileConfigs.plus(mainProfile.instanceId to mainProfileConfig)
