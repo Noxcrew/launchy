@@ -64,6 +64,16 @@ fun ProfileBar(url: String, profile: Profile) {
                     RemoveProfileButton(profile)
                 }
             }
+            profile.info?.description?.also {
+                Spacer(Modifier.width(5.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Spacer(Modifier.width(10.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall)
+                }
+            }
             Spacer(Modifier.width(5.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
