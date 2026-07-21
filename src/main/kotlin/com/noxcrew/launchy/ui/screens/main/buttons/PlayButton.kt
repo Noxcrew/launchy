@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.data.Dirs
 import com.noxcrew.launchy.logic.FabricInstaller
+import com.noxcrew.launchy.logic.Installation
+import com.noxcrew.launchy.logic.MinecraftDetector
 import com.noxcrew.launchy.ui.state.TopBarState
 import com.noxcrew.launchy.util.OS
 import kotlinx.coroutines.delay
@@ -74,61 +76,43 @@ fun PlayButton(
                     println("Bumping profile in launcher")
                     FabricInstaller.bumpProfile(Dirs.minecraft, "MC Championship")
 
-                    // Open the launcher, we just try to open both types!
-                    println("Starting launcher")
-
-                    // Run the standalone installer which is located at a different path per OS
-                    var errors = 0
-                    try {
-                        val path = when (OS.get()) {
-                            OS.WINDOWS -> "${System.getenv()["ProgramFiles(x86)"]}\\Minecraft Launcher\\MinecraftLauncher.exe"
-                            OS.MAC -> "/Applications/Minecraft.app/Contents/MacOS/launcher"
-                            OS.LINUX -> "minecraft-launcher"
-                        }
-                        println("Running process $path")
-                        ProcessBuilder(listOf(path)).start()
-                    } catch (x: Throwable) {
-                        x.printStackTrace()
-                        errors++
-                    }
-
-                    // If the regular one didn't work, use "minecraft" protocol for UWP Minecraft Launcher
-                    if (OS.get() == OS.WINDOWS) {
-                        if (errors == 1) {
-                            try {
-                                val command = listOf("powershell.exe", "start", "shell:AppsFolder\\Microsoft.4297127D64EC6_8wekyb3d8bbwe!Minecraft")
-                                ProcessBuilder(command).start()
-                            } catch (x: Throwable) {
-                                x.printStackTrace()
-                                errors++
-                            }
-                        }
-                    } else {
-                        // Outside of windows don't try to boot up the store version!
-                        errors++
-                    }
-
-                    // If both launchers errored we show a warning!
-                    if (errors == 2) {
-                        state.errorMessage = """
-                            An error occurred while opening the launcher. Please manually start the Minecraft Launcher.
-                            
-                            If the problem persists ask for help on the Discord.
-                            """.trimIndent()
-                        return@Button
-                    }
-
-                    // If we want to minimize the window we can disable this, but by default we just close the program
-                    // and let the launcher do its thing!
-                    if (true) {
-                        exitProcess(0)
-                    }
-
+                    // Minimize the launcher
                     state.startingLauncher = true
                     topBar.windowState.isMinimized = true
+
                     coroutineScope.launch {
-                        delay(10.seconds)
-                        state.startingLauncher = false
+                        // Run the Minecraft launcher
+                        try {
+                            val installations = MinecraftDetector.detectInstallations()
+                            if (installations.isEmpty()) {
+                                state.errorMessage = """
+                                    Could not find any Minecraft Launcher installation. Please manually start the Minecraft Launcher.
+                                    
+                                    If the problem persists ask for help on the Discord.
+                                """.trimIndent()
+
+                                topBar.windowState.isMinimized = false
+                                state.startingLauncher = false
+                            } else {
+                                installations.firstOrNull()?.start()
+
+                                // If we want to minimize the window we can disable this, but by default we just close the program
+                                // and let the launcher do its thing!
+                                exitProcess(0)
+                            }
+                        } catch (x: Throwable) {
+                            x.printStackTrace()
+
+                            state.errorMessage = """
+                                An error occurred while opening the launcher. Please manually start the Minecraft Launcher.
+                                
+                                If the problem persists ask for help on the Discord.
+                            """.trimIndent()
+
+                            topBar.windowState.isMinimized = false
+                            state.startingLauncher = false
+                            return@launch
+                        }
                     }
                 }
             }

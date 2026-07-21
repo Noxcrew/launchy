@@ -72,6 +72,14 @@ fun ProfileBar(url: String, profile: Profile) {
                 Spacer(Modifier.width(10.dp))
                 Text("${profile.nameToMod.size} mods", style = MaterialTheme.typography.bodySmall)
             }
+            Spacer(Modifier.width(5.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Spacer(Modifier.width(10.dp))
+                Text(url.substringAfterLast("/"), style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }

@@ -126,7 +126,7 @@ class LaunchyState(
         minecraftValid && FabricInstaller.isProfileInstalled(
             Dirs.minecraft,
             "MC Championship"
-        )
+        ) && PrismInstaller.isProfileInstalled(profile)
     )
     val fabricUpToDate by derivedStateOf {
         profileCreated &&
@@ -270,6 +270,7 @@ class LaunchyState(
             profile.fabricVersion,
             versionId,
         )
+        PrismInstaller.installToLauncher(versionId, profile)
         println("Finished installing profile")
         profileCreated = true
         installedFabricVersion = "Installing..."
