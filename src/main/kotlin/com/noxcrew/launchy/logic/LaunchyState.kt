@@ -126,6 +126,7 @@ class LaunchyState(
                     .filter { currentEnabledCache!!.containsAll(it.value) }.keys
                     .map { it.name }.toSet(),
                 toggledMods = currentEnabledCache!!.mapTo(mutableSetOf()) { it.name },
+                updateId = mainProfileConfig.updateId + 1,
             )
             currentEnabledCache = null
             profileConfigs = profileConfigs.plus(mainProfile.instanceId to mainProfileConfig)
@@ -167,6 +168,7 @@ class LaunchyState(
                     .map { it.name }.toSet(),
                 toggledMods = currentEnabledCache!!.mapTo(mutableSetOf()) { it.name },
                 seenGroups = mainProfile.groups.map { it.name }.toSet(),
+                updateId = mainProfileConfig.updateId + 1,
             )
             currentEnabledCache = null
             profileConfigs = profileConfigs.plus(mainProfile.instanceId to mainProfileConfig)
@@ -210,7 +212,8 @@ class LaunchyState(
                                     (profileConfigs[profile.instanceId] ?: return@withLock).let { config ->
                                         config.copy(
                                             downloads = config.downloads.filter { it.key != mod },
-                                            installed = config.installed.minus(mod)
+                                            installed = config.installed.minus(mod),
+                                            updateId = config.updateId + 1,
                                         )
                                     })
                     }
@@ -330,7 +333,7 @@ class LaunchyState(
     suspend fun download(profile: Profile, mod: Mod) {
         val config = profileConfigs[profile.instanceId] ?: return
         runCatching {
-            if (mod !in config.enabledMods.filter { it in config.downloadedMods && config.downloadUrls[it] == it.url }) {
+            if (mod !in config.enabledMods.filter { config.isDownloaded(it) && config.downloads[it.name] == it.url }) {
                 try {
                     println("Starting download of ${mod.name}")
                     downloading[mod] = Progress(0, 0, 0) // set progress to 0
@@ -343,7 +346,8 @@ class LaunchyState(
                                     (profileConfigs[profile.instanceId] ?: return@withLock).let { config ->
                                         config.copy(
                                             downloads = config.downloads.plus(mod.name to mod.url),
-                                            installed = config.installed.plus(mod.name)
+                                            installed = config.installed.plus(mod.name),
+                                            updateId = config.updateId + 1,
                                         )
                                     })
                     }
@@ -364,7 +368,7 @@ class LaunchyState(
                 }
             }
 
-            if (mod.configUrl.isNotBlank() && mod !in config.enabledMods.filter { config.downloadConfigUrls[it] == it.configUrl }) {
+            if (mod.configUrl.isNotBlank() && mod !in config.enabledMods.filter { config.configs[it.name] == it.configUrl }) {
                 try {
                     println("Starting download of ${mod.name} config")
                     downloadingConfigs[mod] = Progress(0, -1, 0) // set progress to 0
@@ -377,7 +381,8 @@ class LaunchyState(
                             profile.instanceId to
                                     (profileConfigs[profile.instanceId] ?: return@withLock).let { config ->
                                         config.copy(
-                                            configs = config.configs.plus(mod.name to mod.configUrl)
+                                            configs = config.configs.plus(mod.name to mod.configUrl),
+                                            updateId = config.updateId + 1,
                                         )
                                     })
                     }

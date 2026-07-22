@@ -31,25 +31,12 @@ data class ProfileConfig(
             return profile
         }
 
-    val downloadUrls: Map<Mod, DownloadURL> by lazy {
-        downloads
-            .mapNotNull { profile.getMod(it.key)?.to(it.value) }
-            .toMap()
-    }
-
-    val downloadConfigUrls: Map<Mod, DownloadURL> by lazy {
-        configs
-            .mapNotNull { profile.getMod(it.key)?.to(it.value) }
-            .toMap()
-    }
-
     val isUpToDate: Boolean
         get() = (installedMinecraftVersion == profile.minecraftVersion &&
                 installedFabricVersion == profile.fabricVersion)
 
-    val downloadedMods: List<Mod> by lazy {
-        profile.nameToMod.values.filter { isDownloaded(it) }
-    }
+    val downloadedMods: List<Mod>
+        get() = profile.nameToMod.values.filter { isDownloaded(it) }
 
     val enabledMods: Set<Mod>
         get() {
@@ -74,18 +61,18 @@ data class ProfileConfig(
     val queuedDownloads: Set<Mod>
         get() {
             val enabledModsWithConfig = enabledMods.filter { it.configUrl != "" }
-            val upToDateMods = enabledMods.filter { it in downloadedMods && downloadUrls[it] == it.url }
-            val upToDateConfigs = enabledMods.filter { downloadConfigUrls[it] == it.configUrl }
+            val upToDateMods = enabledMods.filter { isDownloaded(it) && downloads[it.name] == it.url }
+            val upToDateConfigs = enabledMods.filter { configs[it.name] == it.configUrl }
             return (enabledMods - upToDateMods.toSet()) + (enabledModsWithConfig - upToDateConfigs.toSet())
         }
     val queuedUpdates : Set<Mod>
-        get() = queuedDownloads.filter { it in downloadedMods }.toSet()
+        get() = queuedDownloads.filter { isDownloaded(it) }.toSet()
 
     val queuedInstalls: Set<Mod>
         get() = queuedDownloads - queuedUpdates
 
     val queuedDeletions: List<ModName>
-        get() = disabledMods(enabledMods).filter { it in downloadedMods }.map { it.name } +
+        get() = disabledMods(enabledMods).filter { isDownloaded(it) }.map { it.name } +
                 (installed - profile.nameToMod.keys.toSet())
 
     fun disabledMods(enabledMods: Set<Mod>): Set<Mod> =
