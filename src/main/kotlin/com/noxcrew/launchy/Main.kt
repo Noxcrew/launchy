@@ -35,6 +35,7 @@ import com.noxcrew.launchy.ui.screens.Screens
 import com.noxcrew.launchy.ui.state.TopBarProvider
 import com.noxcrew.launchy.ui.state.TopBarState
 import net.fabricmc.installer.util.Utils
+import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -55,6 +56,12 @@ val LocalLaunchyState: LaunchyState
 @OptIn(ExperimentalPathApi::class)
 @ExperimentalComposeUiApi
 fun main() {
+    // Write crash logs that occur without catching to a file
+    Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
+        val log = File("crash.log")
+        log.writeText(throwable.stackTraceToString())
+    }
+
     println("MCC Launchy")
     application {
         val windowState = rememberWindowState(placement = WindowPlacement.Floating)
@@ -92,7 +99,7 @@ fun main() {
                 save = true
             }
 
-            val (profiles, errorMessage) = Profile.readAll(config.profiles.values.map { it.profileUrl })
+            val (profiles, errorMessage) = Profile.readAll(config.profiles.values.map { it.profileUrl } + config.mainProfile)
             value = LaunchyState(config, profiles, errorMessage)
             if (save) value?.save()
             value?.verify()
