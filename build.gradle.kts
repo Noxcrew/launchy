@@ -38,6 +38,10 @@ dependencies {
     implementation("net.fabricmc:fabric-installer:1.0.1")
     implementation("edu.stanford.ejalbert:BrowserLauncher2:1.3")
     implementation("net.kyori:adventure-nbt:4.18.0")
+    implementation("org.slf4j:slf4j-api:2.0.18")
+    implementation("org.apache.logging.log4j:log4j-api:2.26.1")
+    implementation("org.apache.logging.log4j:log4j-core:2.26.1")
+    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.26.1")
 }
 
 val displayVersion = extra["displayVersion"]

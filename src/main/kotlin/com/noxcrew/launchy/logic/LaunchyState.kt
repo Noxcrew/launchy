@@ -12,6 +12,7 @@ import com.noxcrew.launchy.data.ModName
 import com.noxcrew.launchy.data.Profile
 import com.noxcrew.launchy.data.ProfileConfig
 import com.noxcrew.launchy.data.unzip
+import com.noxcrew.launchy.logger
 import com.noxcrew.launchy.ui.screens.Screen
 import com.noxcrew.launchy.ui.screens.openScreen
 import kotlinx.coroutines.Dispatchers
@@ -203,7 +204,7 @@ class LaunchyState(
         for (mod in config.queuedDeletions) {
             launch(Dispatchers.IO) {
                 try {
-                    println("Starting deletion of $mod")
+                    logger.info("Starting deletion of $mod")
                     val file = Dirs.launchyInstances / profile.instanceId / "mods/${mod}.jar"
                     file.deleteIfExists()
                     editMutex.withLock {
@@ -217,7 +218,7 @@ class LaunchyState(
                                         )
                                     })
                     }
-                    println("Successfully deleted $mod")
+                    logger.info("Successfully deleted $mod")
                 } catch (e: FileSystemException) {
                     // Ignore file system exceptions
                 }
@@ -323,11 +324,11 @@ class LaunchyState(
             }
         }
 
-        println("Finished installing profile")
+        logger.info("Finished installing profile")
 
         profileConfigs = profileConfigs.plus(profile.instanceId to newConfig)
         save()
-        println("Finished saving profile")
+        logger.info("Finished saving profile")
     }
 
     suspend fun download(profile: Profile, mod: Mod) {
@@ -335,7 +336,7 @@ class LaunchyState(
         runCatching {
             if (mod !in config.enabledMods.filter { config.isDownloaded(it) && config.downloads[it.name] == it.url }) {
                 try {
-                    println("Starting download of ${mod.name}")
+                    logger.info("Starting download of ${mod.name}")
                     downloading[mod] = Progress(0, 0, 0) // set progress to 0
                     Downloader.download(url = mod.url, writeTo = config.getFile(mod)) progress@{
                         downloading[mod] = it
@@ -351,17 +352,16 @@ class LaunchyState(
                                         )
                                     })
                     }
-                    println("Successfully downloaded ${mod.name}")
+                    logger.info("Successfully downloaded ${mod.name}")
                 } catch (ex: CancellationException) {
                     throw ex // Must let the CancellationException propagate
                 } catch (e: Exception) {
-                    println("Failed to download ${mod.name}")
-                    e.printStackTrace()
+                    logger.error("Failed to download ${mod.name}", e)
                     editMutex.withLock {
                         failedDownloads += mod
                     }
                 } finally {
-                    println("Finished download of ${mod.name}")
+                    logger.info("Finished download of ${mod.name}")
                     editMutex.withLock {
                         downloading -= mod
                     }
@@ -370,7 +370,7 @@ class LaunchyState(
 
             if (mod.configUrl.isNotBlank() && mod !in config.enabledMods.filter { config.configs[it.name] == it.configUrl }) {
                 try {
-                    println("Starting download of ${mod.name} config")
+                    logger.info("Starting download of ${mod.name} config")
                     downloadingConfigs[mod] = Progress(0, -1, 0) // set progress to 0
                     val modConfig = config.getConfig(mod)
                     Downloader.download(url = mod.configUrl, writeTo = modConfig) progress@{
@@ -388,17 +388,16 @@ class LaunchyState(
                     }
                     unzip(modConfig.toFile(), config.instanceFolder.toString())
                     modConfig.toFile().delete()
-                    println("Successfully downloaded ${mod.name} config")
+                    logger.info("Successfully downloaded ${mod.name} config")
                 } catch (ex: CancellationException) {
                     throw ex // Must let the CancellationException propagate
                 } catch (e: Exception) {
-                    println("Failed to download ${mod.name} config")
+                    logger.error("Failed to download ${mod.name} config", e)
                     editMutex.withLock {
                         failedDownloads += mod
                     }
-                    e.printStackTrace()
                 } finally {
-                    println("Finished download of ${mod.name} config")
+                    logger.info("Finished download of ${mod.name} config")
                     editMutex.withLock {
                         downloadingConfigs -= mod
                     }
@@ -406,7 +405,7 @@ class LaunchyState(
             }
         }.onFailure {
             if (it !is CancellationException) {
-                it.printStackTrace()
+                logger.error("Failed while trying to download mod", it)
             }
         }
     }
@@ -432,7 +431,7 @@ class LaunchyState(
             initialProfileDialog = false
             openScreen(Screen.Profiles)
         } catch (x: Throwable) {
-            x.printStackTrace()
+            logger.error("Failed to add profile", x)
             errorMessage = "The given URL does not contain a valid profile!"
         }
     }

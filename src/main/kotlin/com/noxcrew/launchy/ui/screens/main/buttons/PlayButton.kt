@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.data.Dirs
 import com.noxcrew.launchy.data.Profile
+import com.noxcrew.launchy.logger
 import com.noxcrew.launchy.logic.FabricInstaller
 import com.noxcrew.launchy.logic.MinecraftDetector
 import com.noxcrew.launchy.logic.PrismInstaller
@@ -62,16 +63,16 @@ fun PlayButton(
                                             !PrismInstaller.isProfileInstalled(it.profile) ||
                                             it.installedVersion != it.profile.getVersionId()
                                 }) {
-                                println("Started update #$i")
+                                logger.info("Started update #$i")
                                 state.updating = profile.instanceId
                                 state.update(profile)
                                 state.save()
                                 state.updating = null
-                                println("Finished update #$i")
+                                logger.info("Finished update #$i")
                                 i++
                             }
                         } catch (x: Throwable) {
-                            x.printStackTrace()
+                            logger.error("Failed to update game", x)
                             state.errorMessage = """
                                 An error occurred while installing the game, please close any opened instances of Minecraft or the Minecraft Launcher and try again.
                                 
@@ -81,7 +82,7 @@ fun PlayButton(
                     }
                 } else {
                     // Bump the profile to the top of the list
-                    println("Bumping profile in launcher")
+                    logger.info("Bumping profile in launcher")
                     FabricInstaller.bumpProfile(Dirs.minecraft, profile.instanceId)
 
                     // Minimize the launcher
@@ -109,8 +110,7 @@ fun PlayButton(
                                 exitProcess(0)
                             }
                         } catch (x: Throwable) {
-                            x.printStackTrace()
-
+                            logger.error("Failed to start launcher", x)
                             state.errorMessage = """
                                 An error occurred while opening the launcher. Please manually start the Minecraft Launcher.
                                 

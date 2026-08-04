@@ -1,5 +1,6 @@
 package com.noxcrew.launchy.logic
 
+import com.noxcrew.launchy.logger
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -48,7 +49,7 @@ object Downloader {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.error("Failed to download file from `$url`", e)
             throw e
         }
     }

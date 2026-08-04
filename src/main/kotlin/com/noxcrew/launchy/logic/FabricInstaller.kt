@@ -6,6 +6,7 @@
  */
 package com.noxcrew.launchy.logic
 
+import com.noxcrew.launchy.logger
 import mjson.Json
 import net.fabricmc.installer.client.ProfileInstaller
 import net.fabricmc.installer.client.ProfileInstaller.LauncherType
@@ -52,14 +53,14 @@ object FabricInstaller {
     ) {
         val launcherProfiles: Path = mcDir.resolve("launcher_profiles.json")
         if (!Files.exists(launcherProfiles)) {
-            println("Could not find launcher_profiles")
+            logger.warn("Could not find launcher_profiles")
             return
         }
-        println("Bumping profile")
+        logger.info("Bumping profile")
         val jsonObject = JSONObject(Utils.readString(launcherProfiles))
         val profiles: JSONObject = jsonObject.getJSONObject("profiles")
         if (!profiles.has(profileName)) {
-            println("Could not find profile in list")
+            logger.warn("Could not find profile in list")
             return
         }
         val profile: JSONObject = profiles.getJSONObject(profileName)
@@ -75,7 +76,7 @@ object FabricInstaller {
         loaderVersion: String,
         versionId: String,
     ) {
-        println("Installing $gameVersion with fabric $loaderVersion under $versionId")
+        logger.info("Installing $gameVersion with fabric $loaderVersion under $versionId")
         val versionsDir = mcDir.resolve("versions")
         val profileDir = versionsDir.resolve(versionId)
         val profileJsonPath = profileDir.resolve("$versionId.json")
@@ -98,10 +99,10 @@ object FabricInstaller {
     ) {
         val launcherProfiles: Path = mcDir.resolve("launcher_profiles.json")
         if (!Files.exists(launcherProfiles)) {
-            println("Could not find launcher_profiles")
+            logger.warn("Could not find launcher_profiles")
             return
         }
-        println("Creating profile")
+        logger.info("Creating profile")
         val jsonObject = JSONObject(Utils.readString(launcherProfiles))
         val profiles: JSONObject = jsonObject.getJSONObject("profiles")
         var foundProfileName: String? = profileName
@@ -171,7 +172,7 @@ object FabricInstaller {
             input.close()
             var4
         } catch (e: IOException) {
-            e.printStackTrace()
+            logger.error("Failed to load profile icon", e)
             "TNT"
         }
     }

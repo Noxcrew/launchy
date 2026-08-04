@@ -1,6 +1,7 @@
 package com.noxcrew.launchy.data
 
 import com.noxcrew.launchy.data.Config.Companion.LAUNCHY_VERSION
+import com.noxcrew.launchy.logger
 import com.noxcrew.launchy.logic.Downloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,7 +63,7 @@ data class Profile(
                     Dirs.versionsFolder.createDirectories()
                     read(url, Dirs.versionsFolder.resolve(url.substringAfterLast("/")))
                 } catch (x: Throwable) {
-                    x.printStackTrace()
+                    logger.error("Failed to load version information", x)
                     errorMessage = "An error occurred while loading version information. Please contact an administrator for assistance!"
                     Profile(valid = false)
                 }
@@ -74,7 +75,7 @@ data class Profile(
         }
 
         suspend fun read(url: String, target: Path): Profile = withContext(Dispatchers.IO) {
-            println("Fetching profile from $url to ${target.absolutePathString()}")
+            logger.info("Fetching profile from $url to ${target.absolutePathString()}")
             Downloader.download(url, target)
             Formats.yaml.decodeFromStream(serializer(), target.inputStream())
         }

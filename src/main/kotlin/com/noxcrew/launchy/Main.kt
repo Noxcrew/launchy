@@ -35,6 +35,8 @@ import com.noxcrew.launchy.ui.screens.Screens
 import com.noxcrew.launchy.ui.state.TopBarProvider
 import com.noxcrew.launchy.ui.state.TopBarState
 import net.fabricmc.installer.util.Utils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -53,16 +55,17 @@ val LocalLaunchyState: LaunchyState
     @Composable
     get() = LaunchyStateProvider.current
 
+val logger: Logger = LoggerFactory.getLogger("Launchy")
+
 @OptIn(ExperimentalPathApi::class)
 @ExperimentalComposeUiApi
 fun main() {
     // Write crash logs that occur without catching to a file
     Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
-        val log = File("crash.log")
-        log.writeText(throwable.stackTraceToString())
+        logger.error("Caught exception while starting", throwable)
     }
 
-    println("MCC Launchy")
+    logger.info("Booting up MCC Launchy")
     application {
         val windowState = rememberWindowState(placement = WindowPlacement.Floating)
         val launchyState by produceState<LaunchyState?>(null) {
