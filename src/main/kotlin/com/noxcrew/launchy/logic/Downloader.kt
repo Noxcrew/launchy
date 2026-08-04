@@ -27,8 +27,16 @@ object Downloader {
     ) = withContext(Dispatchers.IO) {
         try {
             val startTime = System.currentTimeMillis()
+            onProgressUpdate(Progress(0L, 0L, 0L))
             val response = httpClient.get(url)
             val contentLength = response.contentLength() ?: -1L
+            onProgressUpdate(
+                Progress(
+                    0L,
+                    contentLength,
+                    System.currentTimeMillis() - startTime
+                )
+            )
             writeTo.parent.createDirectories()
             Files.newOutputStream(writeTo).asSink().buffered().use { sink ->
                 val channel = response.bodyAsChannel()

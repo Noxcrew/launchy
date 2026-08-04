@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowScope
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.ui.state.windowScope
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -43,7 +43,6 @@ fun InitialProfileDialog(
     windowScope: WindowScope,
 ) {
     val state = LocalLaunchyState
-    val coroutineScope = rememberCoroutineScope()
 
     // Overlay that prevents clicking behind it
     windowScope.WindowDraggableArea {
@@ -82,7 +81,7 @@ fun InitialProfileDialog(
                     TextButton(onClick = {
                         val newURL = text.text.trim()
                         if (newURL.isEmpty()) return@TextButton
-                        coroutineScope.launch {
+                        GlobalScope.launch {
                             state.addProfile(newURL)
                         }
                     }) {

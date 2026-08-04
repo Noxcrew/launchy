@@ -55,11 +55,19 @@ val LocalLaunchyState: LaunchyState
     @Composable
     get() = LaunchyStateProvider.current
 
-val logger: Logger = LoggerFactory.getLogger("Launchy")
+private var _logger: Logger? = null
+
+val logger: Logger
+    get() = requireNotNull(_logger)
 
 @OptIn(ExperimentalPathApi::class)
 @ExperimentalComposeUiApi
 fun main() {
+    // Write logs to a specific folder
+    Dirs.logs.createDirectories()
+    System.setProperty("mcclaunchy.logdir", Dirs.logs.toString())
+    _logger = LoggerFactory.getLogger("Launchy")
+
     // Write crash logs that occur without catching to a file
     Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
         logger.error("Caught exception while starting", throwable)

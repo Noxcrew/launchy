@@ -1,13 +1,29 @@
 package com.noxcrew.launchy.ui.screens.settings
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.HistoryEdu
+import androidx.compose.material.icons.rounded.Update
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -85,8 +101,22 @@ fun InfoBar(barOnly: Boolean = false) {
                     state.downloading.values.sumOf { it.totalBytes } + state.downloadingConfigs.values.sumOf { it.totalBytes }
                 val totalBytesDownloaded =
                     state.downloading.values.sumOf { it.bytesDownloaded } + state.downloadingConfigs.values.sumOf { it.bytesDownloaded }
+
+                val total = state.downloading.values.sumOf { it.bytesDownloaded }
+                val time = state.downloading.values.sumOf { it.timeElapsed } / 1000
+                val dps = if (time == 0L) 0 else total / time
+
                 Text(
-                    text = "Downloading ${state.downloading.size + state.downloadingConfigs.size} files (${totalBytesDownloaded / 1000} / ${totalBytesToDownload / 1000} KB)",
+                    text = if (state.downloading.all { it.value.totalBytes == 0L }) {
+                        "Preparing to download ${state.downloading.size + state.downloadingConfigs.size} file(s)"
+                    } else {
+                        "Downloading ${state.downloading.size + state.downloadingConfigs.size} file(s) (${
+                            formatBytes(
+                                totalBytesDownloaded,
+                                totalBytesToDownload
+                            )
+                        } at ${formatSpeed(dps)})"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -106,6 +136,30 @@ fun InfoBar(barOnly: Boolean = false) {
             }
         }
     }
+}
+
+fun formatBytes(bytes: Long, total: Long): String {
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    var doubleSize = total.toDouble()
+    var downloadSize = bytes.toDouble()
+    var unitIndex = 0
+    while (doubleSize >= 1024 && unitIndex < units.lastIndex) {
+        doubleSize /= 1024
+        downloadSize /= 1024
+        unitIndex++
+    }
+    return "${String.format("%.1f", downloadSize)} / ${String.format("%.1f", doubleSize)} ${units[unitIndex]}"
+}
+
+fun formatSpeed(bytes: Long): String {
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    var doubleSize = bytes.toDouble()
+    var unitIndex = 0
+    while (doubleSize >= 1024 && unitIndex < units.lastIndex) {
+        doubleSize /= 1024
+        unitIndex++
+    }
+    return String.format("%.1f %s/s", doubleSize, units[unitIndex])
 }
 
 @Composable

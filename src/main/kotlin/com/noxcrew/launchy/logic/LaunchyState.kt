@@ -45,18 +45,25 @@ class LaunchyState(
 
     var allProfilesByUrl: Map<String, Profile> by mutableStateOf(initialProfiles)
     var profileConfigs by mutableStateOf(buildMap {
+        val usedUrls = mutableSetOf<String>()
         config.profiles.forEach { (key, value) ->
+            if (value.profileUrl in usedUrls) return@forEach
             val profile = allProfilesByUrl[value.profileUrl]!!
-            put(key, value.copy(_profile = profile, instanceId = profile.instanceId))
+            usedUrls += value.profileUrl
+            put(profile.instanceId, value.copy(_profile = profile, instanceId = profile.instanceId))
         }
         initialProfiles
             .filter { it.value.instanceId !in this }
             .forEach { (url, profile) ->
+                if (url in usedUrls) return@forEach
                 put(profile.instanceId, ProfileConfig(profile, profile.instanceId, url))
             }
-        initialProfiles[config.mainProfile]?.takeUnless { it.instanceId in this }?.also {
-            put(it.instanceId, ProfileConfig(it, it.instanceId, config.mainProfile))
-        }
+        initialProfiles[config.mainProfile]
+            ?.takeUnless { it.instanceId in this }
+            ?.also {
+                if (config.mainProfile in usedUrls) return@also
+                put(it.instanceId, ProfileConfig(it, it.instanceId, config.mainProfile))
+            }
     })
 
     var mainProfileUrl by mutableStateOf(config.mainProfile)
@@ -337,7 +344,6 @@ class LaunchyState(
             if (mod !in config.enabledMods.filter { config.isDownloaded(it) && config.downloads[it.name] == it.url }) {
                 try {
                     logger.info("Starting download of ${mod.name}")
-                    downloading[mod] = Progress(0, 0, 0) // set progress to 0
                     Downloader.download(url = mod.url, writeTo = config.getFile(mod)) progress@{
                         downloading[mod] = it
                     }
@@ -371,7 +377,6 @@ class LaunchyState(
             if (mod.configUrl.isNotBlank() && mod !in config.enabledMods.filter { config.configs[it.name] == it.configUrl }) {
                 try {
                     logger.info("Starting download of ${mod.name} config")
-                    downloadingConfigs[mod] = Progress(0, -1, 0) // set progress to 0
                     val modConfig = config.getConfig(mod)
                     Downloader.download(url = mod.configUrl, writeTo = modConfig) progress@{
                         downloadingConfigs[mod] = it

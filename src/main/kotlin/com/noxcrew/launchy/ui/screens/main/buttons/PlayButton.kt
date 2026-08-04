@@ -17,7 +17,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -29,6 +28,7 @@ import com.noxcrew.launchy.logic.FabricInstaller
 import com.noxcrew.launchy.logic.MinecraftDetector
 import com.noxcrew.launchy.logic.PrismInstaller
 import com.noxcrew.launchy.ui.state.TopBarState
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
@@ -38,7 +38,6 @@ fun PlayButton(
     profile: Profile,
 ) {
     val state = LocalLaunchyState
-    val coroutineScope = rememberCoroutineScope()
     Button(
         enabled = !state.startingLauncher && state.minecraftValid && state.updating == null,
         onClick = {
@@ -51,7 +50,7 @@ fun PlayButton(
 
             if (!state.startingLauncher && state.minecraftValid && state.updating == null) {
                 if (profile.instanceId !in state.profilesCreated || profile.instanceId in state.operationsQueued) {
-                    coroutineScope.launch {
+                    GlobalScope.launch {
                         try {
                             var i = 1
                             while (state.profileConfigs[profile.instanceId]!!.let {
@@ -89,7 +88,7 @@ fun PlayButton(
                     state.startingLauncher = true
                     topBar.windowState.isMinimized = true
 
-                    coroutineScope.launch {
+                    GlobalScope.launch {
                         // Run the Minecraft launcher
                         try {
                             val installations = MinecraftDetector.detectInstallations()

@@ -34,6 +34,7 @@ object Dirs {
 
     val configFile = config / "mcclaunchy-launcher.yml"
     val versionsFolder = config / "versions"
+    val logs = config / "logs"
 
     @OptIn(ExperimentalPathApi::class)
     fun createDirs() {
