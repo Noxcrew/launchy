@@ -1,24 +1,17 @@
 package com.noxcrew.launchy.logic
 
 import com.noxcrew.launchy.logger
-import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.contentLength
-import io.ktor.utils.io.core.remaining
-import io.ktor.utils.io.readAvailable
-import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import kotlinx.io.asSink
-import kotlinx.io.buffered
-import kotlinx.io.readByteArray
+import okhttp3.Request
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 
 object Downloader {
-    val httpClient = HttpClient()
+    val client = okhttp3.OkHttpClient()
 
     suspend fun download(
         url: String,
@@ -27,33 +20,54 @@ object Downloader {
     ) = withContext(Dispatchers.IO) {
         try {
             val startTime = System.currentTimeMillis()
+            var lastUpdate = 0L
             onProgressUpdate(Progress(0L, 0L, 0L))
-            val response = httpClient.get(url)
-            val contentLength = response.contentLength() ?: -1L
-            onProgressUpdate(
-                Progress(
-                    0L,
-                    contentLength,
-                    System.currentTimeMillis() - startTime
-                )
-            )
-            writeTo.parent.createDirectories()
-            Files.newOutputStream(writeTo).asSink().buffered().use { sink ->
-                val channel = response.bodyAsChannel()
-                var downloaded = 0L
-                val buffer = ByteArray(8192)
-                while (!channel.isClosedForRead) {
-                    val count = channel.readAvailable(buffer)
-                    if (count <= 0) continue
-                    sink.write(buffer, 0, count)
-                    downloaded += count
-                    onProgressUpdate(
-                        Progress(
-                            downloaded,
-                            contentLength,
-                            System.currentTimeMillis() - startTime
-                        )
+            val request = Request.Builder().url(url).build()
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("HTTP ${response.code}: ${response.message}")
+                }
+
+                // After we get initial data we update the UI
+                val body = response.body
+                val totalBytes = body.contentLength()
+                onProgressUpdate(
+                    Progress(
+                        0,
+                        totalBytes,
+                        System.currentTimeMillis() - startTime
                     )
+                )
+
+                // Start streaming the data to the output file
+                writeTo.parent.createDirectories()
+                body.byteStream().use { input ->
+                    Files.newOutputStream(writeTo).buffered().use { output ->
+                        val buffer = ByteArray(256 * 1024)
+                        var downloaded = 0L
+
+                        while (true) {
+                            coroutineContext.ensureActive()
+                            val read = input.read(buffer)
+                            if (read == -1) break
+
+                            output.write(buffer, 0, read)
+                            downloaded += read
+
+                            val now = System.currentTimeMillis()
+                            if (now - lastUpdate >= 100 || downloaded == totalBytes) {
+                                lastUpdate = now
+                                onProgressUpdate(
+                                    Progress(
+                                        downloaded,
+                                        totalBytes,
+                                        now - startTime
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
