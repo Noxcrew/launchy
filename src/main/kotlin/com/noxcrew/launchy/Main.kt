@@ -43,6 +43,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createDirectories
+import kotlin.io.path.createParentDirectories
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.div
@@ -97,7 +98,10 @@ fun main() {
                         .forEach { child ->
                             Files.move(
                                 child,
-                                instanceFolder.resolve(child.fileName),
+                                instanceFolder.resolve(child.fileName).also {
+                                    // Ensure the target directory exists!
+                                    it.createParentDirectories()
+                                },
                                 StandardCopyOption.REPLACE_EXISTING
                             )
                         }
