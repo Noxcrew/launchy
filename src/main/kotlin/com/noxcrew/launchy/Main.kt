@@ -94,22 +94,27 @@ fun main() {
                 Dirs.configFile.deleteIfExists()
                 instanceFolder.createDirectories()
                 Files.list(Dirs.mcclaunchy).use { paths ->
-                    paths.filter { !it.relativeTo(Dirs.mcclaunchy).startsWith("instances/") }
-                        .forEach { child ->
-                            Files.move(
-                                child,
-                                instanceFolder.resolve(child.fileName).also {
-                                    // Ensure the target directory exists!
-                                    it.createParentDirectories()
-                                },
-                                StandardCopyOption.REPLACE_EXISTING
-                            )
-                        }
+                    paths.filter {
+                        val relative = it.relativeTo(Dirs.mcclaunchy)
+                        !relative.startsWith("instances/") && !relative.startsWith("logs/") && !relative.startsWith("versions/") && !relative.startsWith("mcclaunchy-launcher.yml")
+                    }.forEach { child ->
+                        Files.move(
+                            child,
+                            instanceFolder.resolve(child.fileName).also {
+                                // Ensure the target directory exists!
+                                it.createParentDirectories()
+                            },
+                            StandardCopyOption.REPLACE_EXISTING
+                        )
+                    }
                 }
 
                 // Update the config
                 config = config.copy(
-                    profiles = config.profiles + (mainProfile.instanceId to oldConfig.copy(instanceId = mainProfile.instanceId, profileUrl = config.mainProfile))
+                    profiles = config.profiles + (mainProfile.instanceId to oldConfig.copy(
+                        instanceId = mainProfile.instanceId,
+                        profileUrl = config.mainProfile
+                    ))
                 )
                 save = true
             }
