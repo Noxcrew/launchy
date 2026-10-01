@@ -29,6 +29,7 @@ import java.util.concurrent.CancellationException
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.copyTo
 import kotlin.io.path.createDirectories
+import kotlin.io.path.createParentDirectories
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.div
 import kotlin.io.path.exists
@@ -307,27 +308,27 @@ class LaunchyState(
         PrismInstaller.installToLauncher(profile, versionId, newConfig.instanceFolder)
 
         if (oldConfig.installedMinecraftVersion != newConfig.installedMinecraftVersion) {
-            // Move all mods into a separate folder so the user does not
-            // get confused when a mod for an older version stops working
-            val instanceFolder = Dirs.launchyInstances / profile.instanceId
-            val intendedMods = profile.nameToMod.values.map { newConfig.getFile(it) }
-            val mods = instanceFolder.resolve("mods")
-            mods.takeIf { it.exists() }?.walk()?.forEach { file ->
-                // Ignore directories
-                if (file.isDirectory()) return@forEach
+            try {
+                // Move all mods into a separate folder so the user does not
+                // get confused when a mod for an older version stops working
+                val instanceFolder = Dirs.launchyInstances / profile.instanceId
+                val intendedMods = profile.nameToMod.values.map { newConfig.getFile(it) }
+                val mods = instanceFolder.resolve("mods")
+                mods.takeIf { it.exists() }?.walk()?.forEach { file ->
+                    // Ignore directories
+                    if (file.isDirectory()) return@forEach
 
-                // We can ignore mods that we intended to have!
-                if (file in intendedMods) return@forEach
+                    // We can ignore mods that we intended to have!
+                    if (file in intendedMods) return@forEach
 
-                // Create the target folder
-                val previousMods = instanceFolder.resolve("previous-mods")
-                if (!previousMods.exists()) {
-                    previousMods.createDirectories()
+                    // Copy the mod across to the previous mods folder
+                    val target = instanceFolder.resolve("previous-mods").resolve(mods.relativize(file))
+                    target.createParentDirectories()
+                    file.copyTo(target, overwrite = true)
+                    file.deleteIfExists()
                 }
-
-                // Copy the mod across to the previous mods folder
-                file.copyTo(previousMods.resolve(mods.relativize(file)), overwrite = true)
-                file.deleteIfExists()
+            } catch (x: Exception) {
+                logger.error("Failed to back up old mods", x)
             }
         }
 
