@@ -46,6 +46,7 @@ dependencies {
 val displayVersion = extra["displayVersion"]
 val appName = when {
     Os.isFamily(Os.FAMILY_WINDOWS) -> "MCC Launcher u${displayVersion}"
+    Os.isFamily(Os.FAMILY_MAC) -> "MCC Launcher"
     else -> "mcclauncher"
 }
 

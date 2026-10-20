@@ -102,7 +102,9 @@ fun PlayButton(
                                 topBar.windowState.isMinimized = false
                                 state.startingLauncher = false
                             } else {
-                                installations.firstOrNull()?.start()
+                                val installation = installations.first()
+                                logger.info("Launching ${installation.type}")
+                                installation.start()
 
                                 // If we want to minimize the window we can disable this, but by default we just close the program
                                 // and let the launcher do its thing!
