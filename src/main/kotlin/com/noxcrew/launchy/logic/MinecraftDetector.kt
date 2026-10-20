@@ -1,31 +1,43 @@
 package com.noxcrew.launchy.logic
 
 import com.noxcrew.launchy.util.OS
-import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.div
 import kotlin.io.path.exists
 
-sealed class Installation {
+sealed class Installation(val type: Type) {
+    enum class Type {
+        PRISM,
+        MINECRAFT,
+    }
+
     abstract fun start()
 
-    data class Prism(val executable: Path) : Installation() {
+    class Executable(type: Type, val executable: Path) : Installation(type) {
         override fun start() {
             ProcessBuilder(executable.toString()).start()
         }
     }
 
-    data class Minecraft(val executable: Path) : Installation() {
-        override fun start() {
-            ProcessBuilder(executable.toString()).start()
+    class UwpPackage(type: Type, val packageFamily: String): Installation(type) {
+        init {
+            require(OS.get() == OS.WINDOWS)
         }
-    }
 
-    data class MinecraftUwp(val packageFamily: String) : Installation() {
         override fun start() {
             val command = listOf("powershell.exe", "start", "shell:AppsFolder\\${packageFamily}!Minecraft")
             ProcessBuilder(command).start()
+        }
+    }
+
+    class MacBundle(type: Type, val bundle: Path): Installation(type) {
+        init {
+            require(OS.get() == OS.MAC)
+        }
+
+        override fun start() {
+            ProcessBuilder(listOf("open", bundle.toString())).start()
         }
     }
 }
@@ -40,23 +52,23 @@ object MinecraftDetector {
         when (OS.get()) {
             OS.WINDOWS -> {
                 findMinecraftLauncherUwpPackage()?.also {
-                    result += Installation.MinecraftUwp(it)
+                    result += Installation.UwpPackage(Installation.Type.MINECRAFT, it)
                 }
 
                 findMinecraftWindowsExe()?.also {
-                    result += Installation.Minecraft(Path(it))
+                    result += Installation.Executable(Installation.Type.MINECRAFT, Path(it))
                 }
             }
 
             OS.LINUX -> {
                 findCommand("minecraft-launcher")?.also {
-                    result += Installation.Minecraft(Path(it))
+                    result += Installation.Executable(Installation.Type.MINECRAFT, it)
                 }
             }
 
             OS.MAC -> {
-                findMinecraftMac()?.also {
-                    result += Installation.Minecraft(Path(it))
+                findMacBundle("Minecraft")?.also {
+                    result += Installation.MacBundle(Installation.Type.MINECRAFT, it)
                 }
             }
         }
@@ -64,8 +76,7 @@ object MinecraftDetector {
         return result
     }
 
-    private fun findPrism(): Installation.Prism? {
-        val executable = when (OS.get()) {
+    private fun findPrism(): Installation? = when (OS.get()) {
             OS.WINDOWS -> findExecutable(
                 listOf(
                     Path(System.getenv("ProgramFiles")) / "PrismLauncher/PrismLauncher.exe",
@@ -73,26 +84,21 @@ object MinecraftDetector {
                     Path(System.getenv("APPDATA")) / "PrismLauncher.exe",
                     Path(System.getenv("LOCALAPPDATA")) / "Programs/PrismLauncher/PrismLauncher.exe"
                 )
-            )
+            )?.let { Installation.Executable(Installation.Type.PRISM, it) }
 
-            OS.LINUX -> findCommand("prismlauncher")?.let { Path(it) }
+            OS.LINUX -> findCommand("prismlauncher")?.let { Installation.Executable(Installation.Type.PRISM, it) }
 
-            OS.MAC -> findPrismMac()?.let { Path(it) }
-        } ?: return null
-        return Installation.Prism(executable)
-    }
+            OS.MAC -> findMacBundle("Prism Launcher")?.let { Installation.MacBundle(Installation.Type.PRISM, it) }
+        }
 
-    private fun findMinecraftMac(): String? {
-        val path = "/Applications/Minecraft.app/Contents/MacOS/launcher"
-        return path.takeIf { File(it).canExecute() }
-    }
 
-    private fun findPrismMac(): String? {
-        val path = "/Applications/PrismLauncher.app/Contents/MacOS/PrismLauncher"
-        return path.takeIf { File(it).canExecute() }
-    }
+    private fun findMacBundle(name: String): Path? = listOf(
+        "/Applications/$name.app",
+        "/Users/${System.getProperty("user.name")}/Applications/$name.app"
+    )
+        .firstNotNullOfOrNull { Path(it).takeIf(Path::exists) }
 
-    private fun findCommand(command: String): String? {
+    private fun findCommand(command: String): Path? {
         return try {
             val process = ProcessBuilder("which", command)
                 .redirectErrorStream(true)
@@ -104,7 +110,7 @@ object MinecraftDetector {
                 .trim()
 
             if (process.waitFor() == 0 && result.isNotBlank()) {
-                result
+                Path(result)
             } else {
                 null
             }
