@@ -20,7 +20,6 @@ import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.ui.screens.main.buttons.PlayButton
 import com.noxcrew.launchy.ui.screens.main.buttons.ProfileButton
 import com.noxcrew.launchy.ui.screens.main.buttons.SettingsButton
-import com.noxcrew.launchy.ui.screens.settings.InfoBar
 import com.noxcrew.launchy.ui.state.TopBar
 import com.noxcrew.launchy.ui.state.windowScope
 
@@ -28,9 +27,7 @@ import com.noxcrew.launchy.ui.state.windowScope
 @Composable
 fun MainScreen() {
     val state = LocalLaunchyState
-    Scaffold(
-        bottomBar = { InfoBar(barOnly = true) },
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         Box {
             BackgroundImage(windowScope)
 
@@ -45,13 +42,12 @@ fun MainScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 LogoLarge(Modifier.weight(3f))
+                PlayButton(TopBar, state.mainProfile, true)
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().weight(1f),
                 ) {
-                    PlayButton(TopBar, state.mainProfile)
-                    Spacer(Modifier.width(10.dp))
                     SettingsButton()
                     if (state.hasProfiles) {
                         Spacer(Modifier.width(10.dp))

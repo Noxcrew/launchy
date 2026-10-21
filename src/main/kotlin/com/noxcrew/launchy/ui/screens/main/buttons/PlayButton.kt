@@ -2,6 +2,7 @@ package com.noxcrew.launchy.ui.screens.main.buttons
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -11,15 +12,16 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Update
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.noxcrew.launchy.LocalLaunchyState
 import com.noxcrew.launchy.data.Dirs
 import com.noxcrew.launchy.data.Profile
@@ -28,6 +30,8 @@ import com.noxcrew.launchy.logic.FabricInstaller
 import com.noxcrew.launchy.logic.MinecraftDetector
 import com.noxcrew.launchy.logic.PrismInstaller
 import com.noxcrew.launchy.ui.state.TopBarState
+import com.noxcrew.launchy.ui.theme.MccButton
+import com.noxcrew.launchy.ui.theme.MccButtonColors
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
@@ -36,16 +40,18 @@ import kotlin.system.exitProcess
 fun PlayButton(
     topBar: TopBarState,
     profile: Profile,
+    withPackName: Boolean = false,
 ) {
     val state = LocalLaunchyState
-    Button(
+    MccButton(
         enabled = !state.startingLauncher && state.minecraftValid && state.updating == null,
+        colors = MccButtonColors.Yellow,
         onClick = {
             if (!profile.valid) {
                 state.errorMessage = """
                     An error occurred while loading version information. Please contact an administrator for assistance!
                 """.trimIndent()
-                return@Button
+                return@MccButton
             }
 
             if (!state.startingLauncher && state.minecraftValid && state.updating == null) {
@@ -75,8 +81,9 @@ fun PlayButton(
                             state.errorMessage = """
                                 An error occurred while installing the game, please close any opened instances of Minecraft or the Minecraft Launcher and try again.
                                 
-                                If the problem persists ask for help on the Discord.
+                                If the problem persists, ask for help on the Discord.
                                 """.trimIndent()
+                            state.errorStack = x.stackTraceToString()
                         }
                     }
                 } else {
@@ -96,7 +103,7 @@ fun PlayButton(
                                 state.errorMessage = """
                                     Could not find any Minecraft Launcher installation. Please manually start the Minecraft Launcher.
                                     
-                                    If the problem persists ask for help on the Discord.
+                                    If the problem persists, ask for help on the Discord.
                                 """.trimIndent()
 
                                 topBar.windowState.isMinimized = false
@@ -115,7 +122,7 @@ fun PlayButton(
                             state.errorMessage = """
                                 An error occurred while opening the launcher. Please manually start the Minecraft Launcher.
                                 
-                                If the problem persists ask for help on the Discord.
+                                If the problem persists, ask for help on the Discord.
                             """.trimIndent()
 
                             topBar.windowState.isMinimized = false
@@ -125,46 +132,52 @@ fun PlayButton(
                     }
                 }
             }
-        },
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.primary
-        )
+        }
     ) {
         @Composable
-        fun AnimatedVisibilityScope.button(name: String, icon: ImageVector) {
-            Row {
-                Icon(icon, name.replace(".", ""))
-                Spacer(Modifier.width(5.dp))
-                Text(name)
+        fun AnimatedVisibilityScope.button(name: String, icon: ImageVector, includePackName: Boolean = true) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Row {
+                    Icon(icon, name.replace(".", ""))
+                    Spacer(Modifier.width(5.dp))
+                    Text(name)
+                }
+                if (withPackName && includePackName) {
+                    Text("${profile.displayName} v${profile.version}",
+                        fontStyle = FontStyle.Normal,
+                        fontSize = 12.sp,
+                        letterSpacing = 0.5.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 
         AnimatedVisibility(!state.minecraftValid) {
-            button("Invalid Minecraft", Icons.Rounded.Close)
+            button("INVALID MINECRAFT", Icons.Rounded.Close, false)
         }
         AnimatedVisibility(state.minecraftValid) {
             AnimatedVisibility(state.updating == null) {
                 AnimatedVisibility(profile.instanceId !in state.profilesCreated) {
-                    button("Install", Icons.Rounded.Download)
+                    button("INSTALL", Icons.Rounded.Download)
                 }
                 AnimatedVisibility(profile.instanceId in state.profilesCreated && profile.instanceId in state.operationsQueued) {
-                    button("Update", Icons.Rounded.Download)
+                    button("UPDATE", Icons.Rounded.Download)
                 }
                 AnimatedVisibility(profile.instanceId in state.profilesCreated && profile.instanceId !in state.operationsQueued) {
-                    button("Play", Icons.Rounded.PlayArrow)
+                    button("PLAY", Icons.Rounded.PlayArrow)
                 }
             }
             AnimatedVisibility(state.updating == profile.instanceId) {
                 AnimatedVisibility(profile.instanceId !in state.profilesCreated) {
-                    button("Installing...", Icons.Rounded.Update)
+                    button("INSTALLING...", Icons.Rounded.Update)
                 }
                 AnimatedVisibility(profile.instanceId in state.profilesCreated) {
-                    button("Updating...", Icons.Rounded.Update)
+                    button("UPDATING...", Icons.Rounded.Update)
                 }
             }
             AnimatedVisibility(state.updating != null && state.updating != profile.instanceId) {
-                button("Waiting", Icons.Rounded.ChangeCircle)
+                button("WAITING", Icons.Rounded.ChangeCircle)
             }
         }
     }

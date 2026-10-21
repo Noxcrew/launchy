@@ -114,6 +114,7 @@ class LaunchyState(
     }
 
     var errorMessage by mutableStateOf(initialErrorMessage)
+    var errorStack by mutableStateOf(initialErrorMessage)
     var initialProfileDialog by mutableStateOf(false)
     var startingLauncher by mutableStateOf(false)
 

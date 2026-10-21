@@ -30,14 +30,14 @@ import com.noxcrew.launchy.data.Formats
 import com.noxcrew.launchy.data.Profile
 import com.noxcrew.launchy.data.ProfileConfig
 import com.noxcrew.launchy.logic.LaunchyState
-import com.noxcrew.launchy.ui.createColorScheme
 import com.noxcrew.launchy.ui.screens.Screens
 import com.noxcrew.launchy.ui.state.TopBarProvider
 import com.noxcrew.launchy.ui.state.TopBarState
+import com.noxcrew.launchy.ui.theme.MccColorScheme
+import com.noxcrew.launchy.ui.theme.MccShapes
 import net.fabricmc.installer.util.Utils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -137,8 +137,7 @@ fun main() {
         ) {
             val topBarState = remember { TopBarState(onClose, windowState, this) }
             val ready = launchyState != null
-            val scheme = createColorScheme()
-            MaterialTheme(colorScheme = scheme) {
+            MaterialTheme(colorScheme = MccColorScheme, shapes = MccShapes) {
                 CompositionLocalProvider(TopBarProvider provides topBarState) {
                     Scaffold {
                         AnimatedVisibility(!ready, exit = fadeOut()) {
