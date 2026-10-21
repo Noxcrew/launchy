@@ -79,8 +79,8 @@ fun MccButton(
                 )
                 .background(if (enabled) colors.containerColor else colors.disabledContainerColor, shape)
                 .clickable(interactionSource = interactionSource, onClick = onClick, enabled = enabled, indication = null)
-                .padding(20.dp, 13.dp)
                 .pointerHoverIcon(PointerIcon.Hand)
+                .padding(20.dp, 13.dp)
         ) {
             content()
         }

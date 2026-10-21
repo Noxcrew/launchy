@@ -44,7 +44,7 @@ fun PlayButton(
 ) {
     val state = LocalLaunchyState
     MccButton(
-        enabled = !state.startingLauncher && state.minecraftValid && state.updating == null,
+        enabled = !state.startingLauncher && state.atLeastOneInstallPresent && state.updating == null,
         colors = MccButtonColors.Yellow,
         onClick = {
             if (!profile.valid) {
@@ -54,7 +54,7 @@ fun PlayButton(
                 return@MccButton
             }
 
-            if (!state.startingLauncher && state.minecraftValid && state.updating == null) {
+            if (!state.startingLauncher && state.atLeastOneInstallPresent && state.updating == null) {
                 if (profile.instanceId !in state.profilesCreated || profile.instanceId in state.operationsQueued) {
                     GlobalScope.launch {
                         try {
@@ -64,7 +64,7 @@ fun PlayButton(
                                             it.queuedInstalls.isNotEmpty() ||
                                             it.queuedDeletions.isNotEmpty() ||
                                             !it.isUpToDate ||
-                                            !FabricInstaller.isProfileInstalled(Dirs.minecraft, it.profile.instanceId) ||
+                                            (state.vanillaMinecraftValid && !FabricInstaller.isProfileInstalled(Dirs.minecraft, it.profile.instanceId)) ||
                                             !PrismInstaller.isProfileInstalled(it.profile) ||
                                             it.installedVersion != it.profile.getVersionId()
                                 }) {
@@ -153,10 +153,10 @@ fun PlayButton(
             }
         }
 
-        AnimatedVisibility(!state.minecraftValid) {
+        AnimatedVisibility(!state.atLeastOneInstallPresent) {
             button("INVALID MINECRAFT", Icons.Rounded.Close, false)
         }
-        AnimatedVisibility(state.minecraftValid) {
+        AnimatedVisibility(state.atLeastOneInstallPresent) {
             AnimatedVisibility(state.updating == null) {
                 AnimatedVisibility(profile.instanceId !in state.profilesCreated) {
                     button("INSTALL", Icons.Rounded.Download)

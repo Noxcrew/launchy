@@ -59,7 +59,7 @@ fun InfoBar(barOnly: Boolean = false) {
                 Spacer(Modifier.width(10.dp))
 
                 ActionButton(
-                    shown = !state.minecraftValid,
+                    shown = !state.atLeastOneInstallPresent,
                     icon = Icons.Rounded.Error,
                     desc = "No minecraft installation found",
                 )

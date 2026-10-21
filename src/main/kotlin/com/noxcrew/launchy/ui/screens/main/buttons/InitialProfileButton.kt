@@ -12,7 +12,7 @@ import com.noxcrew.launchy.ui.theme.MccButtonColors
 fun InitialProfileButton() {
     val state = LocalLaunchyState
     MccButton(
-        enabled = state.minecraftValid && !state.isDownloading,
+        enabled = state.atLeastOneInstallPresent && !state.isDownloading,
         colors = MccButtonColors.Dark,
         onClick = {
             state.initialProfileDialog = true

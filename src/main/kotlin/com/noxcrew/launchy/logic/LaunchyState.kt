@@ -87,11 +87,12 @@ class LaunchyState(
 
     fun isDownloading(mod: Mod) = downloading[mod] != null || downloadingConfigs[mod] != null
 
-    val minecraftValid = (Dirs.minecraft / "launcher_profiles.json").exists()
+    val installs = MinecraftDetector.detectInstallations()
+    val atLeastOneInstallPresent = installs.isNotEmpty()
+    val vanillaMinecraftValid = (Dirs.minecraft / "launcher_profiles.json").exists()
     val profilesCreated by derivedStateOf {
         profileConfigs.values.filter {
-            minecraftValid &&
-                    FabricInstaller.isProfileInstalled(Dirs.minecraft, it.instanceId) &&
+            (!vanillaMinecraftValid || FabricInstaller.isProfileInstalled(Dirs.minecraft, it.instanceId)) &&
                     PrismInstaller.isProfileInstalled(it.profile)
         }.map { it.instanceId }
     }
@@ -188,7 +189,7 @@ class LaunchyState(
 
     suspend fun update(profile: Profile) = coroutineScope {
         val config = profileConfigs[profile.instanceId]!!
-        val profileCreated = minecraftValid &&
+        val profileCreated = atLeastOneInstallPresent &&
                 FabricInstaller.isProfileInstalled(Dirs.minecraft, profile.instanceId) &&
                 PrismInstaller.isProfileInstalled(profile)
         val fabricUpToDate = profileCreated && config.isUpToDate
