@@ -1,21 +1,12 @@
 package com.noxcrew.launchy.ui.screens.main
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.window.WindowDraggableArea
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -29,24 +20,6 @@ fun BoxScope.BackgroundImage(windowScope: WindowScope) {
             contentDescription = "Main render",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
-        )
-    }
-    BackgroundTint()
-}
-
-@Composable
-fun BoxScope.BackgroundTint() {
-    val colors = listOf(
-        Color.Transparent,
-        MaterialTheme.colorScheme.background,
-    )
-
-    BoxWithConstraints(Modifier.align(Alignment.BottomCenter)) {
-        Spacer(
-            Modifier
-                .fillMaxWidth()
-                .height(maxHeight / 2)
-                .background(Brush.verticalGradient(colors))
         )
     }
 }
